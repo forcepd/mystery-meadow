@@ -20,7 +20,7 @@ const BADGES: Record<Badge, { icon: string; label: string }> = {
   kept: { icon: '❤️', label: 'Kept' },
 };
 
-/** DESIGN 17.3 Animal Card (through Phase 5). Opens when an animal is tapped in the world. */
+/** DESIGN 17.3 Animal Card (through Phase 6). Opens when an animal is tapped in the world. */
 export function AnimalCard() {
   const { sim } = useSim();
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -32,6 +32,13 @@ export function AnimalCard() {
     'openScreen',
     useCallback(({ screen }) => {
       if (screen) setSelectedId(null);
+    }, []),
+  );
+
+  useAppEvent(
+    'decorate',
+    useCallback(({ on }) => {
+      if (on) setSelectedId(null);
     }, []),
   );
 
@@ -151,6 +158,17 @@ export function AnimalCard() {
       </p>
 
       <ul className={styles.status}>
+        <li data-testid="zone-status">
+          {animal.zone === 'house' ? (
+            <>
+              <span aria-hidden="true">🏠</span> Inside the house
+            </>
+          ) : (
+            <>
+              <span aria-hidden="true">🌳</span> Outside in the yard
+            </>
+          )}
+        </li>
         {animal.sickness && (
           <li data-testid="sick-status" className={styles.sick}>
             <span aria-hidden="true">{illness?.symptomIcon ?? '🤒'}</span>{' '}

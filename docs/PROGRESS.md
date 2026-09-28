@@ -518,3 +518,107 @@ All DESIGN 10.1 rules are unit tested, including the four named cases: keeping w
 - **Pet tiles use `touch-action: none` so dragging works on touch.** With a large Storage, scrolling starts from the gaps between tiles. Check it on a real iPad; if it's awkward, the fix is press-and-hold to start a drag.
 - Buying Pet Slots and Storage expansions arrives with the Real Estate shop in Phase 7.
 - Portraits are colored circles until the Phase 10 art pass.
+
+## Phase 6: House interior and Decorating (built 2026-09-28)
+
+### What was built
+
+**Content (`src/config/items.ts`)**
+
+- **Placeable items:** each has a footprint, an icon, and a placeholder color.
+  - The 10 yard lures, with DESIGN 6.5 prices and lure values. Little Pond and Rainbow Fountain are 2×1.
+  - The food bowl.
+  - 15 furniture items across all 8 DESIGN 12.3 categories. Each has a coziness value and a layer: floor, rug (goes under furniture), or wall (hangs on the wall strip).
+  - 3 pet beds: Basic 60 / Fluffy 150 / Royal 400. Each gives +0.25 / +0.5 / +1 happiness a minute.
+- **Wallpaper and flooring:** 4 wallpapers and 3 floors. The first of each is a free starter.
+- **Prices and coziness are defaults.** Edit them freely.
+
+**Sim**
+
+- **Placement (`systems/placement.ts`):**
+  - `buyItem` puts the item in the inventory. Wallpaper and flooring can only be bought once.
+  - `placeItem`, `moveItem`, `rotateItem`, `storeItem`, and `applySurface`.
+  - The checks: the item goes in the right zone, fits on the grid (house = the tier's interior grid, 8×6 for the Cottage; wall art on a one-row strip; yard 12×5), and doesn't overlap on its layer.
+  - Yard lures are limited to the tier's lure slots (3 for the Cottage).
+  - Rotating by 90° swaps the footprint's width and height, and rotating skips any turn that doesn't fit. Wall art only turns 180°.
+  - The last food bowl can't be put away.
+- **Zones (`systems/zones.ts`):**
+  - Indoor slots = pet beds placed in the house. Beds add no capacity.
+  - `moveAnimalToZone` backs drag-to-door. Going in needs a free bed ("Animals need a pet bed to come inside…"); going out always works.
+  - Putting away a bed that's in use sends that animal outside.
+- **Wandering (your choice):** when an animal's wander timer fires, it switches zones 25% of the time. Kept pets and unhappy animals (happiness < 50) go in 60% of the time and come out only 10%. Nobody switches while the player is away.
+- **Coziness (your choice):** the sum of house decor, wallpaper, and flooring, capped at 100. Indoors, animals regain up to +1.5 happiness a minute from Coziness, plus their bed's bonus. The best bed goes to the first animal inside.
+- **Hunger indoors:** a hungry animal with no bowl in its zone walks to a bowl in the other zone. It can always go out; it goes in only if a bed is free.
+- **Events:** `animalMovedZone`, `itemBought`, `itemPlaced`, `itemMoved`, `itemStored`, `surfaceApplied`. The game saves after purchases and decorating.
+- **Save v4:** adds `house.wallpaperId` and `house.flooringId`. Old saves get the free starters through the migration.
+
+**World and UI**
+
+- **`ZoneScene`:** a shared base for the yard and the house. It handles animals (tap = card, hold = pet, **drag to the door** = go to the other zone), bowls, poop, placed items, and Decorate mode. `YardScene` adds visitors and the house exterior; `HouseScene` draws the walls, floor, and the "🌳 Outside" doormat.
+- **Moving between zones:** animals walk out through the door and in from the other side. Dropping an animal away from the door sends it back to its spot. A refused drop floats the reason by the door.
+- **HUD menu:**
+  - 🏠 House / 🌳 Yard toggle, with beds in use ("🛏️ 1/2").
+  - 🐾 Pets, 📖 Dex, 🛒 Store, 🛠 Decorate.
+  - Toasts moved up above the menu.
+- **Decorate mode:**
+  - The camera zooms out (0.8×) so the whole room fits above the tray, and a tile grid shows.
+  - Tap a tray item, then a spot; or drag it from the tray into the room. A green or red footprint previews it.
+  - Tap a placed item to 🔄 Turn or 📦 Put it away; drag it to move it.
+  - The house has a "Walls & Floors" tab.
+  - Stats show: yard "🌟 Lure 14 · slots 2/3", house "✨ Cozy 20 · 🛏️ beds 2".
+- **Home Store:**
+  - Tabs: Furniture, Pet Beds, Yard & Lures, Walls & Floors, Food & Treats.
+  - Cards show the price, cozy/lure/affinity/bed info, and how many you own.
+  - After buying, "🛠 Place it now" (or "Use it now" for wallpaper and flooring) jumps into Decorate in the right zone.
+  - Pet Boutique is Phase 9 and Helpers is Phase 7.
+- **Animal Card:** "🏠 Inside the house" / "🌳 Outside in the yard". It closes when Decorate starts.
+- **Debug Panel:** "🛏️ Free house kit" and "🌷 Free lures" (`debugGiveItems`).
+
+**Tests**
+
+- **Unit:** 341 in total (30 new).
+  - Buying: cost, refusals, and wallpaper once.
+  - Placement: bounds on both grids, same-layer overlap only (rugs go under), the wall strip, allowed zones, move, rotation and footprint swap, the lure slot limit (moving a placed lure is fine), and Lure Score and affinity from placed lures.
+  - The last food bowl, and wallpaper needing to be owned.
+  - Beds as indoor slots, drag-to-door rules, and a bed put away sending its animal out.
+  - **DESIGN 12.4 examples:**
+    - 1 bed with capacity 7: never more than 1 inside on any tick over 3 hours, at least 5 different animals take turns, and the bed is used most of the time.
+    - 7 beds: all 7 fit, and kept pets reach 7 inside on their own.
+  - Kept or unhappy animals stay inside about 86% of the time vs about 50% for others; nobody switches offline.
+  - **Contagion stays in its zone** with animals indoors (a 40,000-animal statistical check).
+  - Coziness sum and cap, the happiness regen maths, bed assignment, the v3 → v4 migration, and hungry animals walking out to eat.
+- **E2E:** 27 new runs (9 tests × 3 browser setups):
+  - The Yard ⟷ House toggle.
+  - Buy a bed, "Place it now", place it.
+  - Drag an animal to the door (in with a bed; refused without one).
+  - Drag an animal out through the doormat.
+  - Drag a lure from the tray into the yard, and the Lure Score goes up.
+  - Select, turn, and put away.
+  - Buy wallpaper and apply it.
+  - The layout survives a reload.
+
+### Phase 6 "Done when"
+
+- **The 1-bed and 7-bed examples behave exactly as DESIGN 12.4 describes:** unit tests check every tick over hours of play (see above).
+- **Contagion respects zones:** unit-tested with animals split between yard and house.
+
+### Defaults chosen (spec left open): please confirm or change
+
+1. **Coziness:** gentle regen (your answer). Up to +1.5 happiness a minute at Coziness 100; beds add +0.25 / +0.5 / +1. Happiness drains 2.5 a minute, so a max-cozy room with a Royal bed slightly outpaces it.
+2. **Wandering:** now and then (your answer). A 25% chance to switch each wander tick; kept or unhappy animals go in 60% and come out 10%.
+3. **Starter catalog:** the furniture, beds, wallpaper, and flooring items and their prices are my picks. Edit `items.ts` freely.
+4. **Wall art** hangs on a one-row wall strip above the floor and only turns 180°. **Rugs** go under furniture.
+5. **Hungry animals** walk to a bowl in the other zone when theirs is empty, so nobody starves indoors. The house starts with no bowl; a second bowl costs 40.
+6. **The last food bowl** can't be put away.
+7. **Where animals start:** everyone starts outside. A new game has no beds (the first Basic Bed is 60 coins).
+8. **Decorate mode** zooms the room out to fit above the tray. Animals fade and can't be tapped while decorating.
+
+### Known issues
+
+- **Saves before a reload:** a save started immediately before a reload can be cut off. This affects every save trigger, not just decorating; the e2e test waits 300 ms like the existing rename test. Autosave and save-on-hide cover normal play.
+- **Real-device checks still needed:**
+  - Dragging from the tray into the room.
+  - Drag-to-door with a finger.
+  - Whether tray items (`touch-action: none`) still let the tray scroll sideways when there are many items.
+- **Placeholder art until Phase 10:** furniture is drawn as colored footprints with icons, and the store and tray use emoji.
+- **Upgrading the house (Phase 7)** will have to move furniture that doesn't fit into the inventory, as DESIGN 12.1 says.

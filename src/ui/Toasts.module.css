@@ -1,6 +1,7 @@
 .stack {
   position: absolute;
-  bottom: calc(16px + var(--safe-bottom));
+  /* Above the menu buttons along the bottom. */
+  bottom: calc(112px + var(--safe-bottom));
   left: 50%;
   transform: translateX(-50%);
   display: flex;

@@ -133,3 +133,11 @@ export function debugAddStoredPets(sim: GameSim, n: number): number {
     return count;
   });
 }
+
+/** Adds items to the inventory for free (e.g. `{ bed_basic: 3 }`), ready to place. */
+export function debugGiveItems(sim: GameSim, items: Record<string, number>): void {
+  sim.debugRun((ctx) => {
+    const inv = ctx.state.world.inventory;
+    for (const [id, n] of Object.entries(items)) inv[id] = (inv[id] ?? 0) + n;
+  });
+}

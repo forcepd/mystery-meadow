@@ -5,6 +5,7 @@ import {
   debugAddCoins,
   debugAddGems,
   debugCureAll,
+  debugGiveItems,
   debugMakeSick,
   debugRunOnline,
   debugSetNeeds,
@@ -170,6 +171,30 @@ export default function DebugPanel() {
         </button>
         <button type="button" className={styles.small} onClick={() => debugSetNeeds(sim, 100, 100)}>
           💖 Fill all
+        </button>
+      </div>
+
+      <div className={styles.row}>
+        <span>House</span>
+        <button
+          type="button"
+          className={styles.small}
+          onClick={() => {
+            debugGiveItems(sim, { bed_basic: 3, bed_royal: 1, sofa: 1, round_rug: 1, tv: 1 });
+            setMessage('Beds and furniture in the inventory');
+          }}
+        >
+          🛏️ Free house kit
+        </button>
+        <button
+          type="button"
+          className={styles.small}
+          onClick={() => {
+            debugGiveItems(sim, { carrot_patch: 1, little_pond: 1, rainbow_fountain: 1 });
+            setMessage('Lures in the inventory');
+          }}
+        >
+          🌷 Free lures
         </button>
       </div>
 

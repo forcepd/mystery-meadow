@@ -52,6 +52,7 @@ export class AnimalSprite extends Phaser.GameObjects.Container {
   private hopTween: Phaser.Tweens.Tween | undefined;
   private nextAmbleAt = 0;
   private leaving = false;
+  private dragging = false;
   private lastKey = '';
 
   constructor(
@@ -139,14 +140,15 @@ export class AnimalSprite extends Phaser.GameObjects.Container {
     }
     if (home.x !== this.home.x || home.y !== this.home.y) {
       this.home = home;
-      this.walkTo(home);
+      if (!this.dragging) this.walkTo(home);
     }
-    this.setDepth(this.y);
+    if (!this.dragging) this.setDepth(this.y);
   }
 
   preUpdate(time: number): void {
-    this.setDepth(this.y);
-    if (!this.amble || this.leaving || this.walkTween?.isPlaying() || this.reducedMotion()) return;
+    this.setDepth(this.dragging ? 10_000 : this.y);
+    if (!this.amble || this.leaving || this.dragging) return;
+    if (this.walkTween?.isPlaying() || this.reducedMotion()) return;
     if (time < this.nextAmbleAt) return;
     this.nextAmbleAt = time + 2500 + Math.random() * 4000;
     const angle = Math.random() * Math.PI * 2;
@@ -207,6 +209,44 @@ export class AnimalSprite extends Phaser.GameObjects.Container {
 
   setSelected(selected: boolean): void {
     this.selectRing.setVisible(selected);
+  }
+
+  /** Picked up by the player's finger (drag-to-door). */
+  startDrag(): void {
+    this.dragging = true;
+    this.walkTween?.stop();
+    this.stopHopping();
+    this.figure.setScale(this.baseScale * this.facing * 1.1, this.baseScale * 1.1);
+  }
+
+  dragTo(x: number, y: number): void {
+    this.setPosition(x, y);
+  }
+
+  /** Put down: walks back home unless it's leaving through a door. */
+  endDrag(goHome = true): void {
+    this.dragging = false;
+    this.figure.setScale(this.baseScale * this.facing, this.baseScale);
+    if (goHome) this.walkTo(this.home);
+  }
+
+  get isDragging(): boolean {
+    return this.dragging;
+  }
+
+  /** Walks to a door and fades out (it's going to the other zone). Removes itself. */
+  exitThrough(door: Vec2): void {
+    this.leaving = true;
+    this.disableInteractive();
+    this.dragging = false;
+    this.walkTo(door, () => {
+      this.scene.tweens.add({
+        targets: this,
+        alpha: 0,
+        duration: 350,
+        onComplete: () => this.destroy(),
+      });
+    });
   }
 
   /** Happy wave goodbye after a sale, then removes itself. */

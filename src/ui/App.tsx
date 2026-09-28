@@ -1,9 +1,11 @@
 import { lazy, Suspense } from 'react';
 import type { GameSession } from '../bridge/gameSession';
 import { AnimalCard } from './AnimalCard';
+import { DecorateBar } from './DecorateBar';
 import { DexScreen } from './DexScreen';
 import styles from './App.module.css';
 import { GameCanvas } from './GameCanvas';
+import { HomeStore } from './HomeStore';
 import { Hud } from './Hud';
 import { PetsScreen } from './PetsScreen';
 import { RotateScreen } from './RotateScreen';
@@ -24,6 +26,8 @@ export function App({ session }: { session: GameSession }) {
         <VetClinic />
         <PetsScreen />
         <DexScreen />
+        <DecorateBar />
+        <HomeStore />
         <Toasts />
         {DebugPanel && (
           <Suspense fallback={null}>

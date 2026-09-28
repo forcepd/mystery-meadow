@@ -1,18 +1,36 @@
+import { useCallback, useState } from 'react';
 import { appBus } from '../bridge/appBus';
 import { formatCountdown } from '../bridge/describe';
 import common from './common.module.css';
 import styles from './Hud.module.css';
 import { useSim } from './session';
+import { useAppEvent } from './useAppEvent';
 
-/** DESIGN 17.2 HUD (through Phase 5): coins, gems, Pet Slots, capacity, visitors, Pets, Dex. */
+/**
+ * DESIGN 17.2 HUD (through Phase 6): coins, gems, Pet Slots, capacity, visitors, and the menu:
+ * Yard/House toggle, Pets, Dex, Home Store, Decorate.
+ */
 export function Hud() {
   const { sim } = useSim();
+  const [zone, setZone] = useState<'yard' | 'house'>('yard');
+  const [decorating, setDecorating] = useState(false);
+  useAppEvent(
+    'sceneChanged',
+    useCallback(({ scene }) => {
+      if (scene !== 'vet') setZone(scene);
+    }, []),
+  );
+  useAppEvent(
+    'decorate',
+    useCallback(({ on }) => setDecorating(on), []),
+  );
   const { coins, gems, gateQueue } = sim.state.world;
   const count = sim.animalCount();
   const capacity = sim.capacity();
   const crowded = sim.isCrowded();
   const waiting = gateQueue.some((v) => !v.revealed);
   const slots = sim.petSlots();
+  const indoor = sim.indoorSlots();
 
   let visitorText: string;
   if (crowded) visitorText = 'Too crowded for visitors';
@@ -42,7 +60,20 @@ export function Hud() {
         </div>
       </div>
 
-      <nav className={styles.nav} aria-label="Menu">
+      <nav className={styles.nav} aria-label="Menu" hidden={decorating}>
+        <button
+          type="button"
+          className={`${common.pill} ${styles.zone}`}
+          onClick={() => appBus.emit('showZone', { zone: zone === 'yard' ? 'house' : 'yard' })}
+        >
+          <span className={styles.emoji} aria-hidden="true">
+            {zone === 'yard' ? '🏠' : '🌳'}
+          </span>
+          {zone === 'yard' ? 'House' : 'Yard'}
+          <span className={styles.beds} data-testid="indoor-count">
+            🛏️ {indoor.used}/{indoor.total}
+          </span>
+        </button>
         <button
           type="button"
           className={common.pill}
@@ -62,6 +93,29 @@ export function Hud() {
             📖
           </span>
           Dex
+        </button>
+        <button
+          type="button"
+          className={common.pill}
+          onClick={() => appBus.emit('openScreen', { screen: 'store' })}
+        >
+          <span className={styles.emoji} aria-hidden="true">
+            🛒
+          </span>
+          Store
+        </button>
+        <button
+          type="button"
+          className={common.pill}
+          onClick={() => {
+            appBus.emit('selectAnimal', { id: null });
+            appBus.emit('decorate', { on: true });
+          }}
+        >
+          <span className={styles.emoji} aria-hidden="true">
+            🛠
+          </span>
+          Decorate
         </button>
       </nav>
 

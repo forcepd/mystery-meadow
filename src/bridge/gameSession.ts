@@ -53,6 +53,12 @@ export class GameSession {
       'petUnkept',
       'petStored',
       'petRetrieved',
+      // Home Store purchases and decorating.
+      'itemBought',
+      'itemPlaced',
+      'itemMoved',
+      'itemStored',
+      'surfaceApplied',
     ] as const) {
       sim.events.on(event, () => void this.save());
     }

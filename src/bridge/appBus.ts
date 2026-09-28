@@ -25,9 +25,25 @@ export type AppEvents = {
    * Opens a full-screen overlay (null closes it). `incomingId`: an animal being kept while
    * every Pet Slot is full, so the Pets (Swap) screen asks where it goes.
    */
-  openScreen: { screen: 'pets' | 'dex' | null; incomingId?: string };
+  openScreen: { screen: 'pets' | 'dex' | 'store' | null; incomingId?: string };
   /** Which Phaser scene is showing. */
-  sceneChanged: { scene: 'yard' | 'vet' };
+  sceneChanged: { scene: 'yard' | 'house' | 'vet' };
+  /** Switch the world view between the yard and the house (DESIGN 17.2 toggle). */
+  showZone: { zone: 'yard' | 'house' };
+  /** Decorate mode on/off (DESIGN 12.3). */
+  decorate: { on: boolean };
+  /** Decorate: the item picked in the inventory tray, to place with a tap (null = none). */
+  decorPick: { itemId: string | null };
+  /**
+   * Decorate: an item being dragged from the tray, at a point on the canvas in unzoomed world
+   * units (0..1280 x 0..800; null = off the canvas). The scene converts it through its camera.
+   * `drop` = the finger was lifted there.
+   */
+  decorDrag: { itemId: string; at: { x: number; y: number } | null; drop: boolean };
+  /** Decorate: the placed item selected in the room (scene -> tray), or null. */
+  decorSelect: { placedId: string | null };
+  /** Decorate: something from the tray was placed (scene -> tray). */
+  decorPlaced: { itemId: string; placedId: string };
 };
 
 export const appBus = new Emitter<AppEvents>();

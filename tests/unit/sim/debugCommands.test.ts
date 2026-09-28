@@ -4,6 +4,7 @@ import {
   debugAddGems,
   debugAddStoredPets,
   debugCureAll,
+  debugGiveItems,
   debugMakeSick,
   debugRunOnline,
   debugSetSicknessEnabled,
@@ -101,5 +102,13 @@ describe('debug commands', () => {
     expect(h.sim.state.world.petStorage.every((p) => p.animal.isKept)).toBe(true);
     expect(debugAddStoredPets(h.sim, 50)).toBe(15);
     expect(h.sim.animalCount()).toBe(0);
+  });
+
+  it('gives items to the inventory for free', () => {
+    const h = newSim();
+    debugGiveItems(h.sim, { bed_basic: 2 });
+    debugGiveItems(h.sim, { bed_basic: 1, sofa: 1 });
+    expect(h.sim.state.world.inventory).toEqual({ bed_basic: 3, sofa: 1 });
+    expect(h.sim.state.world.coins).toBe(BALANCE.startingCoins);
   });
 });

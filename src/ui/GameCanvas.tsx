@@ -4,6 +4,8 @@ import { createGame } from '../game/createGame';
 import styles from './GameCanvas.module.css';
 import { useSession } from './session';
 
+const ZONE_SCENES = { yard: 'Yard', house: 'House' } as const;
+
 /** Hosts the Phaser canvas underneath the React overlay. */
 export function GameCanvas() {
   const session = useSession();
@@ -27,22 +29,33 @@ export function GameCanvas() {
     }
     const observer = new ResizeObserver(remeasure);
     observer.observe(host);
+    let zoneScene: 'Yard' | 'House' = 'Yard';
     const offs = [
       appBus.on('canvasTap', () => host.setAttribute('data-canvas-taps', String(++taps))),
       appBus.on('worldReady', () => {
         remeasure();
         host.setAttribute('data-world-ready', 'true');
       }),
-      // Vet Clinic: the yard sleeps (keeps its sprites, ignores taps) while the clinic shows.
+      // Yard <-> House: the one not showing sleeps (keeps its sprites, ignores taps).
+      appBus.on('showZone', ({ zone }) => {
+        const next = ZONE_SCENES[zone];
+        if (next === zoneScene) return;
+        game.scene.sleep(zoneScene);
+        zoneScene = next;
+        // run() starts it the first time, and wakes it after that.
+        game.scene.run(zoneScene);
+        if (zone === 'house') appBus.emit('sceneChanged', { scene: 'house' });
+      }),
+      // Vet Clinic: the current zone sleeps while the clinic shows.
       appBus.on('openVet', ({ animalId }) => {
         game.scene.stop('Vet');
-        game.scene.sleep('Yard');
+        game.scene.sleep(zoneScene);
         game.scene.start('Vet', { animalId });
       }),
       appBus.on('closeVet', () => {
         game.scene.stop('Vet');
-        game.scene.wake('Yard');
-        appBus.emit('sceneChanged', { scene: 'yard' });
+        game.scene.wake(zoneScene);
+        appBus.emit('sceneChanged', { scene: zoneScene === 'Yard' ? 'yard' : 'house' });
       }),
       appBus.on('sceneChanged', ({ scene }) => host.setAttribute('data-scene', scene)),
     ];
