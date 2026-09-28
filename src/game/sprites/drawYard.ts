@@ -76,12 +76,41 @@ export function drawYard(scene: Phaser.Scene): void {
   );
 }
 
-/** The house exterior (redrawn if the color changes). */
-export function drawHouse(g: Phaser.GameObjects.Graphics, wallColor: number): void {
+/**
+ * The house exterior (redrawn when the color or tier changes). Placeholder art that gets
+ * fancier per tier (0 Cottage .. 3 Manor): a porch, an attic window, then towers and a flag.
+ */
+export function drawHouse(g: Phaser.GameObjects.Graphics, wallColor: number, tier = 0): void {
   const { x, y, width, height } = LAYOUT.house;
   const roofH = 100;
   const wallTop = y + roofH - 10;
   g.clear();
+
+  // Manor: towers with pointy roofs on both sides, behind the house.
+  if (tier >= 3) {
+    for (const tx of [x - 18, x + width - 42]) {
+      g.fillStyle(wallColor, 1).lineStyle(5, COLORS.outline, 1);
+      g.fillRoundedRect(tx, wallTop - 30, 60, height - roofH + 40, 8);
+      g.strokeRoundedRect(tx, wallTop - 30, 60, height - roofH + 40, 8);
+      g.fillStyle(0x8a6fc7, 1).lineStyle(5, 0x5f4a96, 1);
+      g.fillTriangle(tx - 8, wallTop - 28, tx + 30, wallTop - 110, tx + 68, wallTop - 28);
+      g.strokeTriangle(tx - 8, wallTop - 28, tx + 30, wallTop - 110, tx + 68, wallTop - 28);
+      g.fillStyle(COLORS.window, 1).lineStyle(4, COLORS.outline, 1);
+      g.fillRoundedRect(tx + 18, wallTop + 10, 24, 34, { tl: 12, tr: 12, bl: 2, br: 2 });
+      g.strokeRoundedRect(tx + 18, wallTop + 10, 24, 34, { tl: 12, tr: 12, bl: 2, br: 2 });
+    }
+    // A flag on the left tower.
+    g.lineStyle(4, COLORS.outline, 1).lineBetween(x + 12, wallTop - 110, x + 12, wallTop - 150);
+    g.fillStyle(0xff6f9a, 1).fillTriangle(
+      x + 14,
+      wallTop - 150,
+      x + 46,
+      wallTop - 140,
+      x + 14,
+      wallTop - 130,
+    );
+  }
+
   // Chimney.
   g.fillStyle(COLORS.roofEdge, 1).fillRect(x + width - 90, y + 10, 34, 60);
   // Walls.
@@ -92,6 +121,12 @@ export function drawHouse(g: Phaser.GameObjects.Graphics, wallColor: number): vo
   g.fillStyle(COLORS.roof, 1).lineStyle(5, COLORS.roofEdge, 1);
   g.fillTriangle(x, wallTop + 6, x + width / 2, y, x + width, wallTop + 6);
   g.strokeTriangle(x, wallTop + 6, x + width / 2, y, x + width, wallTop + 6);
+  // Farmhouse and up: a round attic window.
+  if (tier >= 2) {
+    g.fillStyle(COLORS.window, 1).lineStyle(4, COLORS.outline, 1);
+    g.fillCircle(x + width / 2, y + 58, 20).strokeCircle(x + width / 2, y + 58, 20);
+    g.lineBetween(x + width / 2 - 20, y + 58, x + width / 2 + 20, y + 58);
+  }
   // Door.
   const doorW = 62;
   const doorH = 92;
@@ -107,5 +142,22 @@ export function drawHouse(g: Phaser.GameObjects.Graphics, wallColor: number): vo
     g.fillRoundedRect(wx, wallTop + 30, 60, 50, 6).strokeRoundedRect(wx, wallTop + 30, 60, 50, 6);
     g.lineStyle(3, COLORS.outline, 1).lineBetween(wx + 30, wallTop + 30, wx + 30, wallTop + 80);
     g.lineBetween(wx, wallTop + 55, wx + 60, wallTop + 55);
+    // Bungalow and up: flower boxes.
+    if (tier >= 1) {
+      g.fillStyle(0x9b6a45, 1).fillRect(wx - 4, wallTop + 80, 68, 10);
+      for (let i = 0; i < 5; i++) {
+        g.fillStyle([0xff9fc4, 0xffe066, 0xb69bff][i % 3]!, 1).fillCircle(
+          wx + 4 + i * 13,
+          wallTop + 78,
+          6,
+        );
+      }
+    }
+  }
+  // Bungalow and up: a little porch roof over the door.
+  if (tier >= 1) {
+    g.fillStyle(COLORS.roof, 1).lineStyle(4, COLORS.roofEdge, 1);
+    g.fillRoundedRect(doorX - 22, doorY - 16, doorW + 44, 14, 6);
+    g.strokeRoundedRect(doorX - 22, doorY - 16, doorW + 44, 14, 6);
   }
 }

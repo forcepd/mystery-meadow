@@ -7,8 +7,8 @@ import { useSim } from './session';
 import { useAppEvent } from './useAppEvent';
 
 /**
- * DESIGN 17.2 HUD (through Phase 6): coins, gems, Pet Slots, capacity, visitors, and the menu:
- * Yard/House toggle, Pets, Dex, Home Store, Decorate.
+ * DESIGN 17.2 HUD (through Phase 7): coins, gems, Pet Slots, capacity, visitors, and the menu:
+ * Yard/House toggle, Pets, Dex, Home Store, Real Estate, Decorate.
  */
 export function Hud() {
   const { sim } = useSim();
@@ -103,6 +103,16 @@ export function Hud() {
             🛒
           </span>
           Store
+        </button>
+        <button
+          type="button"
+          className={common.pill}
+          onClick={() => appBus.emit('openScreen', { screen: 'realEstate' })}
+        >
+          <span className={styles.emoji} aria-hidden="true">
+            🏡
+          </span>
+          Real Estate
         </button>
         <button
           type="button"

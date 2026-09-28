@@ -8,6 +8,7 @@ import { GameCanvas } from './GameCanvas';
 import { HomeStore } from './HomeStore';
 import { Hud } from './Hud';
 import { PetsScreen } from './PetsScreen';
+import { RealEstate } from './RealEstate';
 import { RotateScreen } from './RotateScreen';
 import { SessionProvider } from './session';
 import { Toasts } from './Toasts';
@@ -28,6 +29,7 @@ export function App({ session }: { session: GameSession }) {
         <DexScreen />
         <DecorateBar />
         <HomeStore />
+        <RealEstate />
         <Toasts />
         {DebugPanel && (
           <Suspense fallback={null}>

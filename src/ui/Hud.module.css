@@ -78,13 +78,14 @@
   left: calc(12px + var(--safe-left));
   bottom: calc(44px + var(--safe-bottom));
   display: flex;
-  gap: 10px;
+  gap: 8px;
 }
 
 .nav button {
   font: inherit;
   font-weight: 800;
-  font-size: 20px;
+  font-size: 18px;
+  padding: 0 14px 0 8px;
   color: var(--color-ink);
   cursor: pointer;
   touch-action: manipulation;

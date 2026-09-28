@@ -622,3 +622,93 @@ All DESIGN 10.1 rules are unit tested, including the four named cases: keeping w
   - Whether tray items (`touch-action: none`) still let the tray scroll sideways when there are many items.
 - **Placeholder art until Phase 10:** furniture is drawn as colored footprints with icons, and the store and tray use emoji.
 - **Upgrading the house (Phase 7)** will have to move furniture that doesn't fit into the inventory, as DESIGN 12.1 says.
+
+## Phase 7: Progression (built 2026-09-28)
+
+### What was built
+
+**Sim (`systems/realEstate.ts`, `systems/helpers.ts`)**
+
+- **`upgradeHouse(colorId?)`:** moves to the **next** tier only (your choice), at its `balance.ts` price (1,500 / 5,000 / 15,000).
+  - The exterior color can be re-picked for free as part of the upgrade (DESIGN 12.1).
+  - All animals and stored pets stay, and anyone waiting at the gate walks in if there's now room.
+  - **Everything about the house comes from the tier in `balance.ts`:** visitor interval, capacity, interior grid, lure slots, base lure, and the room limit.
+- **`fitItems`:** after an upgrade, every placed item is re-checked against the new house. Items that don't fit go to the inventory, and the last food bowl moves to the first free yard tile instead. Grids only grow with the current tiers, so this is a safety net for edited tiers.
+- **Other purchases:**
+  - `buyRoomExpansion`: +1 capacity at 250 / 400 / 600 / 900 / 1,300, capped by the tier (2 / 3 / 4 / 5). Upgrading raises the cap; the count and prices carry on.
+  - `buyPetSlot`: 6 purchases, 300 → 2,500.
+  - `buyStorageExpansion`: +10 spaces, 3 purchases (200 / 400 / 800).
+  - `changeHouseColor`: 50 coins.
+- **The `realEstate()` query** gives the screen the current and next tiers, the counts, the next prices, and what's maxed out, so the UI hardcodes no numbers.
+- **Helpers** (Home Store → Helpers, bought once, kept in the inventory, never placed), your choice:
+  - **Scoop Bot** (500) cleans the oldest yard poop once a minute (DESIGN 8.3).
+  - **Auto-Feeder** (400) refills every empty bowl, yard or house, once a minute.
+  - Both work online only, like the rest of care.
+- **Events:** `houseUpgraded` and `realEstateBought`, and `poopCleaned` / `bowlRefilled` now say `by` the helper. Real Estate purchases save right away.
+- **Economy harness:** `npm run economy -- --spend` buys each house upgrade as soon as coins cover it plus a 50-coin vet reserve. It reports **hours to reach** each tier (DESIGN 22).
+- No save migration: every field already existed.
+
+**UI**
+
+- **🏡 Real Estate** (HUD button) screen:
+  - Your house next to the next house, with the changes from `balance.ts` (e.g. "Animals: 6 → 9", "A visitor every: 10 min → 8 min", room size, lure slots, lure bonus).
+  - "Upgrade for 1500" opens a "Move in!" step with a free color pick.
+  - Extra Room / Pet Slot / Pet Storage cards with counts and prices, or a note when maxed out.
+  - House paint swatches at 50.
+- **The yard house gets fancier per tier:**
+  - Bungalow: a porch roof and flower boxes.
+  - Farmhouse: adds a round attic window.
+  - Manor: adds towers with purple roofs and a flag.
+- **Moving in:** a star and heart burst over the house, plus a "🎉 Welcome to your Sunny Bungalow!" toast.
+- **Scoop Bot:** a 🤖 that waits by the fence and zips over to each poop it cleans.
+- **Home Store:** a Helpers tab.
+- **HUD menu:** six buttons (House, Pets, Dex, Store, Real Estate, Decorate), slightly smaller so they fit on an iPad mini.
+- **Debug Panel:** "+10k 🪙".
+
+**Tests**
+
+- **Unit:** 358 in total (17 new).
+  - Upgrades go in order at the listed prices, and after **each** upgrade every tier number matches `BALANCE` (interval, capacity, grid, lure slots, base lure, room cap).
+  - The new visitor interval applies from the next visitor on.
+  - Refusals, and "biggest house already".
+  - Animals, stored pets, and indoor animals are all kept.
+  - Items that don't fit go to the inventory, and the last bowl is kept.
+  - The free repaint on upgrade, and a waiting visitor admitted after an upgrade.
+  - Room caps per tier, all Pet Slot and Storage prices, and paint rules.
+  - Scoop Bot (the oldest yard poop, once a minute, never the house), Auto-Feeder, and helpers doing nothing unless bought or while away.
+- **Done when "all four tiers reachable":** a spending bot moves all the way to the Grand Manor in the unit tests.
+- **E2E:** 15 new runs (5 tests × 3 browser setups):
+  - Upgrade to the Bungalow with a free Mint color.
+  - "Not enough coins yet".
+  - Buy a room, a Pet Slot, and Storage, and repaint.
+  - The upgrade survives a reload.
+  - Buy Scoop Bot and watch it clean a real yard poop (Clean goes 80 → 100).
+
+### Phase 7 "Done when"
+
+- **All four tiers are reachable:** a unit test and the harness show it.
+- **Each tier's numbers come from `balance.ts`:** checked after each upgrade.
+
+### Pacing (please look at this)
+
+Averaged over 30 bots × 48 h with `--spend`:
+
+| Tier | Hours of play to move in |
+|---|---|
+| Sunny Bungalow | **3.5 h** (DESIGN 15.1: "≈ 3–4 hours") |
+| Big Farmhouse | **8.7 h** |
+| Grand Manor | **21.4 h** |
+
+DESIGN 15.1 calls the Manor "a multi-week goal". The bot is perfect: it taps every visitor instantly and sells the moment it can. A kid will be much slower, but maybe not "weeks" slow. Each upgrade also speeds up earning (more room, faster visitors, rarer animals). **Designer call:** keep it, or raise the Farmhouse and Manor prices in `balance.ts` (e.g. 8,000 and 30,000).
+
+### Defaults chosen (spec left open): please confirm or change
+
+1. **Upgrades go in order** (your answer).
+2. **Helpers** (your answer): Scoop Bot 500 (the yard only, one poop a minute) and Auto-Feeder 400 (every empty bowl, once a minute).
+3. **The free repaint** is part of the upgrade step, so no save field was needed.
+4. **Room expansions carry over when upgrading**, and the per-tier cap (2 / 3 / 4 / 5) counts the rooms already bought.
+
+### Known issues
+
+- House exteriors and Scoop Bot are placeholder art until Phase 10.
+- House interiors don't change look per tier beyond the bigger grid (smaller tiles).

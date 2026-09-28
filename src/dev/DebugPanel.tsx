@@ -156,6 +156,9 @@ export default function DebugPanel() {
         <button type="button" className={styles.small} onClick={() => debugAddCoins(sim, 1000)}>
           +1000 🪙
         </button>
+        <button type="button" className={styles.small} onClick={() => debugAddCoins(sim, 10_000)}>
+          +10k 🪙
+        </button>
         <button type="button" className={styles.small} onClick={() => debugAddGems(sim, 10)}>
           +10 💎
         </button>

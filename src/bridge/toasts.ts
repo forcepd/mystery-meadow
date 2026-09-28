@@ -1,3 +1,4 @@
+import { BALANCE } from '../config/balance';
 import { getIllness } from '../config/illnesses';
 import type { SimEvents } from '../sim/events';
 import { displayName, speciesName } from './describe';
@@ -39,6 +40,10 @@ export const TOASTS: {
     text: `The vet is ready to see ${displayName(animal)}!`,
   }),
   animalCured: ({ animal }) => ({ icon: '💖', text: `${displayName(animal)} is all better!` }),
+  houseUpgraded: ({ tierId }) => ({
+    icon: '🎉',
+    text: `Welcome to your ${BALANCE.houseTiers.find((t) => t.id === tierId)?.name ?? 'new house'}!`,
+  }),
   crowdedChanged: ({ crowded }) =>
     crowded
       ? { icon: '🐾', text: 'Your yard is crowded!' }
