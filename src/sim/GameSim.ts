@@ -1,5 +1,6 @@
 import { BALANCE } from '../config/balance';
 import { DEFAULT_HOUSE_COLOR } from '../config/houseColors';
+import { DEFAULT_FLOORING, DEFAULT_WALLPAPER } from '../config/items';
 import { STARTING_ITEMS } from '../config/yard';
 import type { Clock } from './clock';
 import { emptySummary, minutes, seconds, type SimContext } from './context';
@@ -33,9 +34,31 @@ import {
   swapPets,
   unkeep,
 } from './systems/keeping';
+import {
+  applySurface,
+  buyItem,
+  canPlace,
+  gridSize,
+  lureSlots,
+  luresPlaced,
+  moveItem,
+  ownedCount,
+  placeItem,
+  rotateItem,
+  storeItem,
+  type Rotation,
+  type Tile,
+} from './systems/placement';
 import { cleanPoop } from './systems/poop';
 import { sickChance } from './systems/sickness';
 import { canTrain } from './systems/tricks';
+import {
+  coziness,
+  indoorAnimals,
+  indoorHappinessPerMinute,
+  indoorSlots,
+  moveAnimalToZone,
+} from './systems/zones';
 import {
   examine,
   goToVet,
@@ -108,6 +131,8 @@ export class GameSim {
           roomExpansions: 0,
           petSlotsPurchased: 0,
           storageExpansions: 0,
+          wallpaperId: DEFAULT_WALLPAPER,
+          flooringId: DEFAULT_FLOORING,
         },
         placedItems: [],
         inventory: {},
@@ -270,6 +295,47 @@ export class GameSim {
     return this.command(() => keepBumping(this.ctx, animalId, bumpId, this.now()));
   }
 
+  /** Home Store: buy one into the inventory. */
+  buyItem(itemId: string): CommandResult {
+    return this.command(() => buyItem(this.ctx, itemId));
+  }
+
+  /** Decorate: place one from the inventory. On success, `placedId` is the new item. */
+  placeItem(
+    itemId: string,
+    zone: Zone,
+    tile: Tile,
+    rotation: Rotation = 0,
+  ): CommandResult & { placedId?: string } {
+    this.update();
+    const result = placeItem(this.ctx, itemId, zone, tile, rotation);
+    this.afterChange(true);
+    return result;
+  }
+
+  moveItem(placedId: string, tile: Tile): CommandResult {
+    return this.command(() => moveItem(this.ctx, placedId, tile));
+  }
+
+  rotateItem(placedId: string): CommandResult {
+    return this.command(() => rotateItem(this.ctx, placedId));
+  }
+
+  /** Decorate: back into the inventory. */
+  storeItem(placedId: string): CommandResult {
+    return this.command(() => storeItem(this.ctx, placedId));
+  }
+
+  /** Wallpaper or flooring. */
+  applySurface(itemId: string): CommandResult {
+    return this.command(() => applySurface(this.ctx, itemId));
+  }
+
+  /** Drag-to-door: in (needs a free pet bed) or out. */
+  moveAnimalToZone(animalId: string, zone: Zone): CommandResult {
+    return this.command(() => moveAnimalToZone(this.ctx, animalId, zone));
+  }
+
   // ---- Queries ----------------------------------------------------------------------------
 
   getAnimal(id: string): Readonly<Animal> | undefined {
@@ -341,6 +407,43 @@ export class GameSim {
   sickChance(animalId: string): number | undefined {
     const animal = findAnimal(this.ctx.state.world, animalId);
     return animal && sickChance(this.ctx.state.world, animal);
+  }
+
+  /** Would this placement work? (Decorate mode's green/red preview.) */
+  canPlace(itemId: string, zone: Zone, tile: Tile, rotation: Rotation = 0, movingId?: string) {
+    return canPlace(this.ctx.state.world, itemId, zone, tile, rotation, movingId);
+  }
+
+  /** Tile grid of a zone (the house wall strip is one row). */
+  gridSize(zone: Zone, wall = false) {
+    return gridSize(this.ctx.state.world, zone, wall ? 'wall' : 'floor');
+  }
+
+  lureSlots(): { total: number; used: number } {
+    const world = this.ctx.state.world;
+    return { total: lureSlots(world), used: luresPlaced(world) };
+  }
+
+  /** Indoor slots (pet beds in the house) and animals inside. */
+  indoorSlots(): { total: number; used: number } {
+    const world = this.ctx.state.world;
+    return { total: indoorSlots(world), used: indoorAnimals(world).length };
+  }
+
+  /** Room Coziness 0..100 (DESIGN 12.3). */
+  coziness(): number {
+    return coziness(this.ctx.state.world);
+  }
+
+  /** Happiness per minute an animal regains indoors (0 outside). */
+  indoorHappinessPerMinute(animalId: string): number {
+    const animal = findAnimal(this.ctx.state.world, animalId);
+    return animal ? indoorHappinessPerMinute(this.ctx.state.world, animal) : 0;
+  }
+
+  /** Owned: unplaced plus placed (plus free starter wallpaper/flooring). */
+  ownedCount(itemId: string): number {
+    return ownedCount(this.ctx.state.world, itemId);
   }
 
   /** Pet Slots: total, in use (kept pets out), and free. */

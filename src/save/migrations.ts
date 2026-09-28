@@ -48,6 +48,22 @@ export const MIGRATIONS: Readonly<Record<number, Migration>> = {
    * vet). Nobody could get sick before v3, so there is nothing to fill in: only the version moves.
    */
   2: (save) => ({ ...save, schemaVersion: 3 }),
+
+  /**
+   * v3 -> v4 (Phase 6, House): the house gets its applied wallpaper and flooring (the free
+   * starter ones). Literal ids on purpose (see v1 -> v2).
+   */
+  3: (save) => {
+    const world = save.world as { house: Record<string, unknown> };
+    return {
+      ...save,
+      schemaVersion: 4,
+      world: {
+        ...world,
+        house: { wallpaperId: 'wallpaper_cream', flooringId: 'flooring_wood', ...world.house },
+      },
+    };
+  },
 };
 
 export class SaveError extends Error {

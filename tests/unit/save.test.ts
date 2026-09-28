@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { FakeClock } from '../../src/sim/clock';
 import { GameSim } from '../../src/sim/GameSim';
 import { MemoryStore, SaveManager } from '../../src/save/SaveManager';
-import { SaveError, migrate, type Migration } from '../../src/save/migrations';
+import { MIGRATIONS, SaveError, migrate, type Migration } from '../../src/save/migrations';
 import {
   CURRENT_SCHEMA_VERSION,
   toSaveFile,
@@ -241,7 +241,7 @@ describe('migration v2 -> v3 (Phase 4)', () => {
 
   it('only bumps the version: every animal and value is kept as it was', () => {
     const before = v2Save();
-    const out = migrate(structuredClone(before));
+    const out = MIGRATIONS[2]!(structuredClone(before));
     expect(out.schemaVersion).toBe(3);
     expect({ ...out, schemaVersion: 2 }).toEqual(before);
   });
@@ -256,5 +256,39 @@ describe('migration v2 -> v3 (Phase 4)', () => {
     const sick = GameSim.fromState(state, clock);
     expect(sick.goToVet('a1').ok).toBe(true);
     expect(sick.vetTreat('a1', 'medicine_drops')).toMatchObject({ ok: true, cured: true });
+  });
+});
+
+describe('migration v3 -> v4 (Phase 6)', () => {
+  /** A Phase 4/5 save: the house has no wallpaper or flooring yet. */
+  function v3Save() {
+    const save = toSaveFile(profile, newSim().sim.toState()) as unknown as {
+      schemaVersion: number;
+      world: { house: Record<string, unknown> };
+    };
+    delete save.world.house.wallpaperId;
+    delete save.world.house.flooringId;
+    save.world.house.exteriorColor = 'mint';
+    return { ...save, schemaVersion: 3 };
+  }
+
+  it('gives the house the free starter wallpaper and flooring, keeping everything else', () => {
+    const out = migrate(v3Save());
+    expect(out.schemaVersion).toBe(4);
+    expect(out.world.house).toMatchObject({
+      wallpaperId: 'wallpaper_cream',
+      flooringId: 'flooring_wood',
+      exteriorColor: 'mint',
+      tierId: 'cottage',
+    });
+  });
+
+  it('a migrated v3 save loads and can decorate', () => {
+    const save = migrate(v3Save());
+    const sim = GameSim.fromState(toSimState(save), new FakeClock(save.meta.lastSeenAt));
+    expect(sim.coziness()).toBe(0);
+    expect(sim.buyItem('bed_basic').ok).toBe(true);
+    expect(sim.placeItem('bed_basic', 'house', { x: 0, y: 0 }).ok).toBe(true);
+    expect(sim.indoorSlots()).toEqual({ total: 1, used: 0 });
   });
 });

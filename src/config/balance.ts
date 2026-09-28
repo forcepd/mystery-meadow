@@ -107,6 +107,16 @@ export const BALANCE = deepFreeze({
 
   wander: { minSeconds: 60, maxSeconds: 120 },
 
+  // DESIGN 12.4 zones. [DEFAULT, Phase 6] When an animal's wander timer fires it may switch
+  // between yard and house (going in needs a free pet bed). Kept pets and unhappy animals
+  // (happiness < unhappyBelow) prefer indoors: they go in more and come out less.
+  zones: { switchChance: 0.25, preferIndoorsIn: 0.6, preferIndoorsOut: 0.1, unhappyBelow: 50 },
+
+  // DESIGN 12.3. [DEFAULT, Phase 6] Room Coziness = sum of house decor, capped at max. Indoor
+  // animals regain regenPerMinuteAtMax x (coziness / max) happiness per minute, plus their
+  // bed's own bonus (items.ts).
+  coziness: { max: 100, regenPerMinuteAtMax: 1.5 },
+
   offline: { maxCatchUpHours: 8, maxGateQueue: 3 },
 
   // [DEFAULT, Phase 1] Fixed sim tick. A gap between updates longer than offlineGapSeconds is

@@ -2,7 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { BALANCE } from '../../src/config/balance';
 import { HOUSE_COLORS, DEFAULT_HOUSE_COLOR } from '../../src/config/houseColors';
 import { EXAM_TOOLS, ILLNESSES, TREATMENTS, getTreatment } from '../../src/config/illnesses';
-import { ITEMS, getItem } from '../../src/config/items';
+import {
+  DEFAULT_FLOORING,
+  DEFAULT_WALLPAPER,
+  ITEMS,
+  getItem,
+  isPlaceable,
+  layerOf,
+} from '../../src/config/items';
 import { SPECIES, getSpecies } from '../../src/config/species';
 import { RARITIES } from '../../src/sim/types';
 
@@ -131,15 +138,49 @@ describe('ITEMS (yard lures, DESIGN 6.5)', () => {
     }
   });
 
-  it('has positive costs and lure values', () => {
+  it('has positive costs (except the free starter wallpaper and flooring) and lure values', () => {
     for (const item of ITEMS) {
-      expect(item.cost).toBeGreaterThan(0);
+      if ('starter' in item && item.starter) expect(item.cost).toBe(0);
+      else expect(item.cost).toBeGreaterThan(0);
       if (item.category === 'lure') expect(item.lure).toBeGreaterThan(0);
     }
     const pond = getItem('little_pond');
     expect(pond?.category === 'lure' && pond.lure).toBe(8);
     expect(getItem('food_bowl')?.category).toBe('bowl');
     expect(getItem('nope')).toBeUndefined();
+  });
+});
+
+describe('ITEMS (house, DESIGN 12.3-12.4)', () => {
+  it('has every decorating category, and three bed styles', () => {
+    const groups = new Set(ITEMS.flatMap((i) => (i.category === 'furniture' ? [i.group] : [])));
+    expect([...groups].sort()).toEqual(
+      ['lamp', 'plant', 'rug', 'seating', 'shelf', 'table', 'tv', 'wallArt'].sort(),
+    );
+    const beds = ITEMS.filter((i) => i.category === 'bed');
+    expect(beds.map((b) => b.category === 'bed' && b.style)).toEqual(['basic', 'fluffy', 'royal']);
+    expect(ITEMS.some((i) => i.category === 'wallpaper')).toBe(true);
+    expect(ITEMS.some((i) => i.category === 'flooring')).toBe(true);
+  });
+
+  it('beds get better with price; exactly one free starter wallpaper and flooring', () => {
+    const beds = ITEMS.flatMap((i) => (i.category === 'bed' ? [i] : []));
+    for (let i = 1; i < beds.length; i++) {
+      expect(beds[i]!.cost).toBeGreaterThan(beds[i - 1]!.cost);
+      expect(beds[i]!.happinessPerMinute).toBeGreaterThan(beds[i - 1]!.happinessPerMinute);
+    }
+    const starters = ITEMS.filter((i) => 'starter' in i && i.starter).map((i) => i.id);
+    expect(starters.sort()).toEqual([DEFAULT_FLOORING, DEFAULT_WALLPAPER].sort());
+  });
+
+  it('every placeable item fits in the smallest grids', () => {
+    for (const item of ITEMS) {
+      if (!isPlaceable(item)) continue;
+      expect(item.size.w).toBeGreaterThan(0);
+      expect(item.size.h).toBeGreaterThan(0);
+      expect(Math.max(item.size.w, item.size.h)).toBeLessThanOrEqual(5); // Yard is 12x5.
+      if (layerOf(item) === 'wall') expect(item.size.h).toBe(1);
+    }
   });
 });
 

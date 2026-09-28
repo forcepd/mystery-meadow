@@ -2,6 +2,7 @@ import { BALANCE } from '../../config/balance';
 import { minutes, type SimContext } from '../context';
 import type { Animal, Ms, WorldState, Zone } from '../types';
 import { isCrowded } from './housing';
+import { bedAssignments, indoorHappinessPerMinute } from './zones';
 
 /** Needs run 0..100 (DESIGN 8.1). */
 export const NEED_MAX = 100;
@@ -31,10 +32,15 @@ export function tickNeeds(ctx: SimContext, dtMs: Ms): void {
   const world = ctx.state.world;
   const hungerPerMs = NEED_MAX / minutes(BALANCE.needs.hungerDrainMinutes);
   const happinessPerMs = NEED_MAX / minutes(BALANCE.needs.happinessDrainMinutes);
+  const beds = bedAssignments(world);
   for (const animal of world.animals) {
     animal.needs.hunger = clampNeed(animal.needs.hunger - hungerPerMs * dtMs);
+    // Indoors, Coziness and the animal's bed give some happiness back (DESIGN 12.3, 8.1).
+    const regen = (indoorHappinessPerMinute(world, animal, beds) * dtMs) / minutes(1);
     animal.needs.happiness = clampNeed(
-      animal.needs.happiness - happinessPerMs * dtMs * happinessDrainMultiplier(world, animal),
+      animal.needs.happiness -
+        happinessPerMs * dtMs * happinessDrainMultiplier(world, animal) +
+        regen,
     );
   }
 }

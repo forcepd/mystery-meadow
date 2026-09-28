@@ -16,6 +16,8 @@ describe('new game', () => {
       roomExpansions: 0,
       petSlotsPurchased: 0,
       storageExpansions: 0,
+      wallpaperId: 'wallpaper_cream',
+      flooringId: 'flooring_wood',
     });
     expect(world.animals).toEqual([]);
     expect(world.settings.offlineProgress).toBe(true);

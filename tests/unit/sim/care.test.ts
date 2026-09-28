@@ -103,10 +103,14 @@ describe('food bowls (DESIGN 8.2)', () => {
     expect(emptied).toHaveBeenCalledOnce();
   });
 
-  it('only uses bowls in the animal’s own zone', () => {
+  it('an indoor animal with no house bowl walks out to eat from a yard bowl (Phase 6)', () => {
     const h = withAnimal({ zone: 'house', needs: { hunger: 10, happiness: 100 } });
+    const moved = vi.fn();
+    h.sim.events.on('animalMovedZone', moved);
     play(h, SEC);
-    expect(h.sim.bowls()[0]!.servings).toBe(BALANCE.needs.bowlServings);
+    expect(h.sim.bowls()[0]!.servings).toBe(BALANCE.needs.bowlServings - 1);
+    expect(h.sim.getAnimal('x')!.zone).toBe('yard');
+    expect(moved).toHaveBeenCalledWith(expect.objectContaining({ to: 'yard', reason: 'food' }));
   });
 
   it('refilling is free, fills the bowl, and refuses when full or not a bowl', () => {

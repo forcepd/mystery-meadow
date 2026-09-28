@@ -118,6 +118,9 @@ export interface HouseState {
   roomExpansions: number;
   petSlotsPurchased: number;
   storageExpansions: number;
+  /** Applied wallpaper and flooring item ids (save v4). */
+  wallpaperId: string;
+  flooringId: string;
 }
 
 export interface WorldState {

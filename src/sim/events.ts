@@ -1,4 +1,4 @@
-import type { Animal, OfflineSummary, Poop, Visitor } from './types';
+import type { Animal, OfflineSummary, PlacedItem, Poop, Visitor, Zone } from './types';
 
 /**
  * Events the sim emits for animations, toasts, and sounds. Payloads reference live sim
@@ -44,6 +44,19 @@ export type SimEvents = {
   petStored: { animal: Animal };
   /** Came out of Pet Storage into a slot. */
   petRetrieved: { animal: Animal };
+  /** Went between yard and house (DESIGN 12.4). */
+  animalMovedZone: {
+    animal: Animal;
+    from: Zone;
+    to: Zone;
+    reason: 'player' | 'wander' | 'food' | 'noBed';
+  };
+  itemBought: { itemId: string };
+  itemPlaced: { item: PlacedItem };
+  /** Moved or rotated. */
+  itemMoved: { item: PlacedItem };
+  itemStored: { item: PlacedItem };
+  surfaceApplied: { itemId: string };
   caughtUp: OfflineSummary;
   /** Something in the state may have changed (a tick ran or a command was called). */
   changed: undefined;

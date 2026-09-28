@@ -1,33 +1,40 @@
 import { BALANCE } from '../../config/balance';
 import { getItem } from '../../config/items';
-import { tileCenter } from '../../config/yard';
 import type { SimContext } from '../context';
 import type { CommandResult, PlacedItem } from '../types';
 import { addCoins } from './economy';
 import { NEED_MAX, addNeeds } from './needs';
 import { findAnimal } from './selling';
+import { tileCenterIn } from './placement';
+import { hasFreeBed, switchZone } from './zones';
 
 export function isBowl(item: PlacedItem): boolean {
   return getItem(item.itemId)?.category === 'bowl';
 }
 
 /**
- * DESIGN 8.2: a hungry animal (hunger < hungryThreshold) walks to a bowl in its zone that has
- * food and eats one serving. Online only (nobody gets hungry while the player is away).
+ * DESIGN 8.2: a hungry animal (hunger < hungryThreshold) walks to a bowl that has food (its own
+ * zone first) and eats one serving. Online only (nobody gets hungry while the player is away).
  */
 export function tickFeeding(ctx: SimContext): void {
   if (ctx.offline) return;
   const world = ctx.state.world;
   for (const animal of world.animals) {
     if (animal.needs.hunger >= BALANCE.needs.hungryThreshold) continue;
-    const bowl = world.placedItems.find(
-      (p) => p.zone === animal.zone && isBowl(p) && (p.servings ?? 0) > 0,
-    );
+    const withFood = (p: PlacedItem) => isBowl(p) && (p.servings ?? 0) > 0;
+    // A bowl in its own zone, or else one in the other zone: out to the yard any time, or
+    // inside if a bed is free. Nobody goes hungry just for being indoors.
+    const bowl =
+      world.placedItems.find((p) => p.zone === animal.zone && withFood(p)) ??
+      world.placedItems.find(
+        (p) => p.zone !== animal.zone && withFood(p) && (p.zone === 'yard' || hasFreeBed(world)),
+      );
     if (!bowl) continue;
+    if (bowl.zone !== animal.zone) switchZone(ctx, animal, bowl.zone, 'food');
     bowl.servings = (bowl.servings ?? 0) - 1;
     addNeeds(animal, BALANCE.needs.hungerPerServing, 0);
     // Stand just in front of the bowl.
-    const at = tileCenter(bowl.tile);
+    const at = tileCenterIn(world, bowl.zone, bowl.tile);
     animal.position = {
       x: Math.min(1, Math.max(0, at.x + ctx.rng.range(-0.04, 0.04))),
       y: Math.min(1, at.y + 0.12),
