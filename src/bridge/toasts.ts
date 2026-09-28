@@ -1,5 +1,6 @@
 import { BALANCE } from '../config/balance';
 import { getIllness } from '../config/illnesses';
+import { getTrick } from '../config/tricks';
 import type { SimEvents } from '../sim/events';
 import { displayName, speciesName } from './describe';
 
@@ -40,6 +41,12 @@ export const TOASTS: {
     text: `The vet is ready to see ${displayName(animal)}!`,
   }),
   animalCured: ({ animal }) => ({ icon: '💖', text: `${displayName(animal)} is all better!` }),
+  trickLearned: ({ animal, trickId, gems }) => ({
+    icon: '🎓',
+    text: `${displayName(animal)} learned ${getTrick(trickId)?.name ?? 'a trick'}!${
+      gems > 0 ? ` +${gems} 💎` : ' (No more trick gems today.)'
+    }`,
+  }),
   houseUpgraded: ({ tierId }) => ({
     icon: '🎉',
     text: `Welcome to your ${BALANCE.houseTiers.find((t) => t.id === tierId)?.name ?? 'new house'}!`,

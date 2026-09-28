@@ -12,12 +12,36 @@ export interface SpeciesVariant {
   readonly placeholderColor: string;
 }
 
+/** Where pet outfits sit on a species' art, in its sprite space (feet near y = +20). */
+export interface OutfitAnchors {
+  readonly head: { readonly x: number; readonly y: number };
+  readonly face: { readonly x: number; readonly y: number };
+  readonly body: { readonly x: number; readonly y: number };
+  /** Outfit size relative to the default critter. */
+  readonly scale: number;
+}
+
 export interface SpeciesDef {
   readonly id: string;
   readonly name: string;
   readonly rarity: Rarity;
   readonly assetKey: string;
   readonly variants: readonly SpeciesVariant[];
+  /** Overrides DEFAULT_OUTFIT_ANCHORS once a species gets its own art (Phase 10). */
+  readonly outfitAnchors?: OutfitAnchors;
+}
+
+/** Anchors for the shared placeholder critter shape (critter.ts). */
+export const DEFAULT_OUTFIT_ANCHORS: OutfitAnchors = deepFreeze({
+  head: { x: 0, y: -58 },
+  face: { x: 0, y: -34 },
+  body: { x: 0, y: 2 },
+  scale: 1,
+});
+
+/** DESIGN 10.3: where outfits go on this species (every species has anchors). */
+export function outfitAnchors(speciesId: string): OutfitAnchors {
+  return getSpecies(speciesId)?.outfitAnchors ?? DEFAULT_OUTFIT_ANCHORS;
 }
 
 const v = (id: string, name: string, placeholderColor: string): SpeciesVariant => ({

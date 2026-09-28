@@ -39,10 +39,8 @@ export function sell(ctx: SimContext, animalId: string, now: Ms): CommandResult 
 
   const price = salePrice(world, animal);
   world.animals = world.animals.filter((a) => a !== animal);
-  // Outfits go back to the wardrobe.
-  for (const itemId of Object.values(animal.outfit)) {
-    if (itemId) world.inventory[itemId] = (world.inventory[itemId] ?? 0) + 1;
-  }
+  // Outfits aren't used up by wearing them (Phase 9, your choice), so they're simply still
+  // yours after a sale: nothing to return.
   addCoins(ctx, price);
   // Announced once the state is final, so listeners (like the save-after-sale) see the coins.
   ctx.emit('animalSold', { animal, price });

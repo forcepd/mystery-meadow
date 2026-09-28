@@ -103,6 +103,10 @@ export const BALANCE = deepFreeze({
     salePriceBonusPerTrick: 0.10,
     maxByRarity: { common: 2, uncommon: 3, rare: 4, epic: 5, legendary: 6 },
     dailyGemCap: 40,
+    // [DEFAULT, Phase 9] Simon-says length per session: 3 cues, then 4, then 5 (DESIGN 11: 3-5).
+    cuesPerSession: [3, 4, 5],
+    // [DEFAULT, Phase 9] A kept pet performing a known trick: +happiness, no cooldown (your choice).
+    performHappiness: 10,
   },
 
   wander: { minSeconds: 60, maxSeconds: 120 },

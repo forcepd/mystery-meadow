@@ -8,7 +8,7 @@ import store from './HomeStore.module.css';
 import { useSim } from './session';
 import { useAppEvent } from './useAppEvent';
 
-type Tab = 'furniture' | 'beds' | 'yard' | 'surfaces' | 'food' | 'helpers';
+type Tab = 'furniture' | 'beds' | 'yard' | 'surfaces' | 'food' | 'petBoutique' | 'helpers';
 
 const TABS: { id: Tab; icon: string; label: string; has: (i: ItemDef) => boolean }[] = [
   { id: 'furniture', icon: '🛋️', label: 'Furniture', has: (i) => i.category === 'furniture' },
@@ -21,6 +21,7 @@ const TABS: { id: Tab; icon: string; label: string; has: (i: ItemDef) => boolean
     has: (i) => i.category === 'wallpaper' || i.category === 'flooring',
   },
   { id: 'food', icon: '🥣', label: 'Food & Treats', has: (i) => i.category === 'bowl' },
+  { id: 'petBoutique', icon: '🎀', label: 'Pet Boutique', has: (i) => i.category === 'petOutfit' },
   { id: 'helpers', icon: '🤖', label: 'Helpers', has: (i) => i.category === 'helper' },
 ];
 
@@ -42,12 +43,17 @@ function details(def: ItemDef): string[] {
       return ['🥣 Holds 5 meals', 'Yard or house'];
     case 'helper':
       return [def.description];
+    case 'petOutfit':
+      return [
+        { head: '🎩 On the head', body: '👕 On the body', face: '👓 On the face' }[def.slot],
+        'Any of your animals can wear it',
+      ];
   }
 }
 
 /**
- * Home Store (DESIGN 13.1), for coins. Pet Boutique (outfits) comes in Phase 9. Bought things
- * go to the inventory (place them in Decorate mode); helpers start working right away.
+ * Home Store (DESIGN 13.1), for coins. Bought things go to the inventory (place them in
+ * Decorate mode); helpers start working right away; pet outfits are worn from an animal's card.
  */
 export function HomeStore() {
   const { sim } = useSim();
@@ -72,7 +78,12 @@ export function HomeStore() {
   const buy = (def: ItemDef) => {
     const result = sim.buyItem(def.id);
     if (!result.ok) setMessage({ text: result.reason, ok: false });
-    else if (def.category === 'helper') {
+    else if (def.category === 'petOutfit') {
+      setMessage({
+        text: `${def.icon} ${def.name} is yours! Dress a pet from its card.`,
+        ok: true,
+      });
+    } else if (def.category === 'helper') {
       setMessage({ text: `${def.name} is on the job! ${def.icon}`, ok: true });
     } else setMessage({ text: `You got the ${def.name}!`, ok: true, place: def });
   };

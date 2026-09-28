@@ -2,6 +2,7 @@ import { BALANCE } from '../config/balance';
 import { getAvatarItem } from '../config/avatarItems';
 import { getIllness } from '../config/illnesses';
 import { getItem } from '../config/items';
+import { getTrick } from '../config/tricks';
 import { addActivity, type ActivityEntry } from '../profile/activity';
 import { DEFAULT_LOADOUT, isValidLoadout, owns, type AvatarLoadout } from '../profile/avatar';
 import { SaveManager, type KeyValueStore } from '../save/SaveManager';
@@ -94,6 +95,9 @@ export class GameSession {
       'realEstateBought',
       'gemsGranted',
       'settingsChanged',
+      'trickPracticed',
+      'trickLearned',
+      'petDressed',
     ] as const) {
       sim.events.on(event, () => void this.save());
     }
@@ -299,6 +303,12 @@ export class GameSession {
       ),
     );
     e.on('gemsGranted', ({ amount }) => this.log('🎁', `A grown-up gave ${amount} gems`));
+    e.on('trickLearned', ({ animal, trickId, gems }) =>
+      this.log(
+        '🎓',
+        `${displayName(animal)} learned ${getTrick(trickId)?.name ?? trickId}${gems ? ` (+${gems} gems)` : ''}`,
+      ),
+    );
   }
 }
 

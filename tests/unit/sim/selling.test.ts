@@ -91,12 +91,12 @@ describe('selling', () => {
     expect(h.sim.sell('x').ok).toBe(false);
   });
 
-  it('returns worn outfits to the inventory', () => {
-    const h = edit(sellable({ outfit: { head: 'bow', face: 'glasses' } }), (s) => {
-      s.world.inventory.bow = 2;
+  it('outfits stay yours after a sale (bought once, never used up; Phase 9)', () => {
+    const h = edit(sellable({ outfit: { head: 'big_bow', face: 'round_specs' } }), (s) => {
+      s.world.inventory = { big_bow: 1, round_specs: 1 };
     });
     h.sim.sell('x');
-    expect(h.sim.state.world.inventory).toEqual({ bow: 3, glasses: 1 });
+    expect(h.sim.state.world.inventory).toEqual({ big_bow: 1, round_specs: 1 });
   });
 
   it('does not show Ready to Sell on kept pets', () => {

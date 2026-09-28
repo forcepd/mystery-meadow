@@ -62,7 +62,18 @@ import {
 } from './systems/realEstate';
 import { hasHelper } from './systems/helpers';
 import { sickChance } from './systems/sickness';
-import { canTrain } from './systems/tricks';
+import {
+  canTrain,
+  maxTricks,
+  performTrick,
+  trainBlocker,
+  trainSession,
+  trickGemsLeftToday,
+  type TrainResult,
+} from './systems/tricks';
+import { dressPet, undressPet } from './systems/petOutfits';
+import { getTrick } from '../config/tricks';
+import type { OutfitSlot } from '../config/items';
 import {
   coziness,
   indoorAnimals,
@@ -416,6 +427,28 @@ export class GameSim {
     });
   }
 
+  /** DESIGN 11: one Simon-says session (the UI plays the mini-game and reports the result). */
+  trainSession(animalId: string, trickId: string, success: boolean): TrainResult {
+    this.update();
+    const result = trainSession(this.ctx, animalId, trickId, success, this.now());
+    this.afterChange(true);
+    return result;
+  }
+
+  /** A kept pet performs a known trick. */
+  performTrick(animalId: string, trickId: string): CommandResult {
+    return this.command(() => performTrick(this.ctx, animalId, trickId));
+  }
+
+  /** Puts an owned outfit on an animal (it replaces what's in that slot). */
+  dressPet(animalId: string, itemId: string): CommandResult {
+    return this.command(() => dressPet(this.ctx, animalId, itemId));
+  }
+
+  undressPet(animalId: string, slot: OutfitSlot): CommandResult {
+    return this.command(() => undressPet(this.ctx, animalId, slot));
+  }
+
   // ---- Queries ----------------------------------------------------------------------------
 
   getAnimal(id: string): Readonly<Animal> | undefined {
@@ -559,6 +592,23 @@ export class GameSim {
     const animal = this.getAnimal(animalId);
     if (!animal) return { ok: false, reason: "Can't find that animal." };
     return canTrain(animal);
+  }
+
+  /** Why this animal can't train this trick now, or null if it can. */
+  trainBlocker(animalId: string, trickId: string): string | null {
+    const animal = findAnimal(this.ctx.state.world, animalId);
+    if (!animal) return "Can't find that animal.";
+    return trainBlocker(animal, getTrick(trickId), this.now());
+  }
+
+  maxTricks(animalId: string): number {
+    const animal = findAnimal(this.ctx.state.world, animalId);
+    return animal ? maxTricks(animal) : 0;
+  }
+
+  /** Trick gems still available today (DESIGN 11 daily cap). */
+  trickGemsLeftToday(): number {
+    return trickGemsLeftToday(this.ctx.state, this.now());
   }
 
   bowls(): readonly PlacedItem[] {

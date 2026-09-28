@@ -81,8 +81,21 @@ export interface HelperItemDef extends BaseItemDef {
   readonly description: string;
 }
 
+export type OutfitSlot = 'head' | 'body' | 'face';
+
+/**
+ * Pet outfit (DESIGN 10.3), from the Home Store's Pet Boutique. Bought once, then any number of
+ * animals can wear it (your choice). `kind` picks the placeholder drawing.
+ */
+export interface PetOutfitItemDef extends BaseItemDef {
+  readonly category: 'petOutfit';
+  readonly slot: OutfitSlot;
+  readonly kind: string;
+  readonly color2?: string;
+}
+
 export type PlaceableItemDef = LureItemDef | BowlItemDef | FurnitureItemDef | BedItemDef;
-export type ItemDef = PlaceableItemDef | SurfaceItemDef | HelperItemDef;
+export type ItemDef = PlaceableItemDef | SurfaceItemDef | HelperItemDef | PetOutfitItemDef;
 
 const one: Footprint = { w: 1, h: 1 };
 
@@ -154,6 +167,28 @@ const bed = (
   assetKey: `item.${id}`,
 });
 
+const outfit = (
+  id: string,
+  name: string,
+  slot: OutfitSlot,
+  kind: string,
+  cost: number,
+  icon: string,
+  color: string,
+  color2?: string,
+): PetOutfitItemDef => ({
+  id,
+  name,
+  category: 'petOutfit',
+  slot,
+  kind,
+  cost,
+  icon,
+  color,
+  ...(color2 ? { color2 } : {}),
+  assetKey: `outfit.${id}`,
+});
+
 const surface = (
   id: string,
   name: string,
@@ -222,6 +257,19 @@ export const ITEMS: readonly ItemDef[] = deepFreeze([
   surface('flooring_checker',  'Checker Tiles',   'flooring',  90,  4, '#f2e3c9'),
   surface('flooring_carpet',   'Cozy Carpet',     'flooring',  150, 8, '#d8c3f0'),
 
+  // Pet Boutique (DESIGN 10.3). [DEFAULT, Phase 9] prices (coins).
+  outfit('party_hat',    'Party Hat',     'head', 'party',   40,  '🥳', '#ff8fc4', '#ffd84d'),
+  outfit('big_bow',      'Big Bow',       'head', 'bow',     35,  '🎀', '#ff6f9a'),
+  outfit('flower_clip',  'Flower Clip',   'head', 'flower',  30,  '🌼', '#ffd84d', '#ff9fc4'),
+  outfit('pet_crown',    'Royal Crown',   'head', 'crown',   120, '👑', '#ffd84d'),
+  outfit('cozy_sweater', 'Cozy Sweater',  'body', 'sweater', 60,  '🧶', '#6fa8ef', '#ffffff'),
+  outfit('hero_cape',    'Hero Cape',     'body', 'cape',    80,  '🦸', '#ef6f6f', '#ffd84d'),
+  outfit('pet_tutu',     'Tutu',          'body', 'tutu',    70,  '🩰', '#ffd1e8'),
+  outfit('warm_scarf',   'Warm Scarf',    'body', 'scarf',   45,  '🧣', '#7cc46a', '#ffffff'),
+  outfit('round_specs',  'Round Glasses', 'face', 'glasses', 40,  '👓', '#4a3b33'),
+  outfit('bandana',      'Bandana',       'face', 'bandana', 35,  '🔴', '#ef6f6f', '#ffffff'),
+  outfit('star_shades',  'Star Shades',   'face', 'star',    90,  '⭐', '#ff6f9a'),
+
   // Helpers (DESIGN 8.3, 13.1). [DEFAULT, Phase 7] prices.
   { id: 'scoop_bot',   name: 'Scoop Bot',   category: 'helper', helper: 'scoopBot',   cost: 500, icon: '🤖', color: '#a7cdef', assetKey: 'item.scoop_bot',
     description: 'Cleans up one poop in the yard every minute' },
@@ -234,7 +282,12 @@ export function getItem(id: string): ItemDef | undefined {
 }
 
 export function isPlaceable(def: ItemDef): def is PlaceableItemDef {
-  return def.category !== 'wallpaper' && def.category !== 'flooring' && def.category !== 'helper';
+  return (
+    def.category === 'lure' ||
+    def.category === 'bowl' ||
+    def.category === 'furniture' ||
+    def.category === 'bed'
+  );
 }
 
 /** Which zone(s) an item can be placed in. */

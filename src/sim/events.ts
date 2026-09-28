@@ -68,6 +68,13 @@ export type SimEvents = {
   surfaceApplied: { itemId: string };
   /** Moved up to the next house tier (DESIGN 12.1). */
   houseUpgraded: { tierId: string };
+  /** A successful Simon-says session that didn't finish the trick yet. */
+  trickPracticed: { animal: Animal; trickId: string; progress: number };
+  /** Learned a new trick; `gems` may be 0 when today's cap is used up. */
+  trickLearned: { animal: Animal; trickId: string; gems: number };
+  trickPerformed: { animal: Animal; trickId: string };
+  /** An outfit piece was put on or taken off. */
+  petDressed: { animal: Animal };
   /** A grown-up gave gems in Parent Mode. */
   gemsGranted: { amount: number };
   /** Parent Mode changed a setting. */
