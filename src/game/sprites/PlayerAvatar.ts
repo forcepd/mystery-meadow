@@ -9,6 +9,8 @@ const SCALE = 0.9 / RESOLUTION;
 const SIZE = { w: 132, h: 224 };
 const SPEED = 260; // world px per second
 const MAX_MS = 1800;
+/** How far to the side of a tapped spot the avatar stops (world px). */
+const STAND_BESIDE = 85;
 
 /**
  * The player's avatar in the world (DESIGN 13.3): walks toward wherever the player taps, just
@@ -69,11 +71,15 @@ export class PlayerAvatar extends Phaser.GameObjects.Container {
     }
   }
 
-  /** Walks toward a tapped point (clamped to the walkable area). */
+  /**
+   * Walks toward a tapped point (clamped to the walkable area), stopping beside it on the side
+   * it came from, so it never stands on top of the animal or bowl that was tapped.
+   */
   walkToward(target: { x: number; y: number }): void {
     const b = this.bounds;
-    const x = Phaser.Math.Clamp(target.x, b.x, b.x + b.w);
-    const y = Phaser.Math.Clamp(target.y + 40, b.y, b.y + b.h);
+    const side = this.x <= target.x ? -1 : 1;
+    const x = Phaser.Math.Clamp(target.x + side * STAND_BESIDE, b.x, b.x + b.w);
+    const y = Phaser.Math.Clamp(target.y + 30, b.y, b.y + b.h);
     this.walk?.stop();
     if (Math.abs(x - this.x) > 4) this.image?.setFlipX(x < this.x);
     if (this.reducedMotion()) {

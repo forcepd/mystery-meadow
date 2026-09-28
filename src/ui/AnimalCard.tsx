@@ -4,6 +4,7 @@ import { appBus } from '../bridge/appBus';
 import { displayName, formatCountdown, speciesName, variantOf } from '../bridge/describe';
 import { BALANCE } from '../config/balance';
 import { getIllness } from '../config/illnesses';
+import { getTrick } from '../config/tricks';
 import type { Badge, GameSim } from '../sim/GameSim';
 import type { Animal } from '../sim/types';
 import styles from './AnimalCard.module.css';
@@ -20,7 +21,7 @@ const BADGES: Record<Badge, { icon: string; label: string }> = {
   kept: { icon: '❤️', label: 'Kept' },
 };
 
-/** DESIGN 17.3 Animal Card (through Phase 6). Opens when an animal is tapped in the world. */
+/** DESIGN 17.3 Animal Card (through Phase 9). Opens when an animal is tapped in the world. */
 export function AnimalCard() {
   const { sim } = useSim();
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -219,10 +220,49 @@ export function AnimalCard() {
               ? `Care bonus +${carePercent}%`
               : `Needs care ${carePercent}%`}
         </li>
+        <li data-testid="tricks-status">
+          <span aria-hidden="true">🎓</span>{' '}
+          {animal.tricks.known.length === 0
+            ? `No tricks yet (can learn ${sim.maxTricks(animal.id)})`
+            : `Tricks: ${animal.tricks.known.map((id) => getTrick(id)?.name ?? id).join(', ')} (${animal.tricks.known.length}/${sim.maxTricks(animal.id)})`}
+        </li>
       </ul>
 
       <div className={styles.actions}>
         {animal.sickness && <VetButton sim={sim} animal={animal} onPress={goToVet} />}
+        <div className={styles.pair}>
+          <button
+            type="button"
+            className={`${common.button} ${styles.secondary}`}
+            onClick={() => appBus.emit('openScreen', { screen: 'training', animalId: animal.id })}
+          >
+            <span aria-hidden="true">🎓</span> Train
+          </button>
+          <button
+            type="button"
+            className={`${common.button} ${styles.secondary}`}
+            onClick={() =>
+              appBus.emit('openScreen', { screen: 'petWardrobe', animalId: animal.id })
+            }
+          >
+            <span aria-hidden="true">👒</span> Dress
+          </button>
+        </div>
+        {animal.isKept && animal.tricks.known.length > 0 && (
+          <div className={styles.perform} role="group" aria-label="Perform a trick">
+            {animal.tricks.known.map((id) => (
+              <button
+                key={id}
+                type="button"
+                className={styles.performButton}
+                onClick={() => act(() => sim.performTrick(animal.id, id))}
+              >
+                <span aria-hidden="true">{getTrick(id)?.icon ?? '⭐'}</span>{' '}
+                {getTrick(id)?.name ?? id}
+              </button>
+            ))}
+          </div>
+        )}
         {animal.isKept ? (
           <div className={styles.pair}>
             <button
@@ -245,21 +285,25 @@ export function AnimalCard() {
             <span aria-hidden="true">❤️</span> Keep as my pet
           </button>
         )}
-        <button
-          type="button"
-          className={`${common.button} ${styles.secondary}`}
-          onClick={() => act(() => sim.feedTreat(animal.id))}
-        >
-          <span aria-hidden="true">🍪</span> Treat for {BALANCE.treat.cost}
-        </button>
-        <button
-          type="button"
-          className={common.button}
-          aria-disabled={!canSell.ok}
-          onClick={() => (canSell.ok ? act(() => sim.sell(animal.id)) : setMessage(canSell.reason))}
-        >
-          <span aria-hidden="true">🪙</span> Sell for {price}
-        </button>
+        <div className={styles.pair}>
+          <button
+            type="button"
+            className={`${common.button} ${styles.secondary}`}
+            onClick={() => act(() => sim.feedTreat(animal.id))}
+          >
+            <span aria-hidden="true">🍪</span> Treat for {BALANCE.treat.cost}
+          </button>
+          <button
+            type="button"
+            className={common.button}
+            aria-disabled={!canSell.ok}
+            onClick={() =>
+              canSell.ok ? act(() => sim.sell(animal.id)) : setMessage(canSell.reason)
+            }
+          >
+            <span aria-hidden="true">🪙</span> Sell for {price}
+          </button>
+        </div>
         {message && (
           <p className={styles.refusal} role="status">
             {message}

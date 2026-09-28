@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { appBus } from '../../bridge/appBus';
 import type { GameSession } from '../../bridge/gameSession';
 import { getItem, isPlaceable, layerOf, type PlaceableItemDef } from '../../config/items';
+import { getTrick } from '../../config/tricks';
 import type { PlacedItem, Vec2, Zone } from '../../sim/types';
 import { WORLD_HEIGHT, WORLD_WIDTH } from '../constants';
 import { Effects } from '../fx/effects';
@@ -156,6 +157,17 @@ export abstract class ZoneScene extends Phaser.Scene {
         // Comes in through this zone's door.
         if (to === this.zone)
           this.spawnFrom.set(animal.id, { at: doorOf(this.zone), kind: 'walk' });
+      }),
+      events.on('trickPerformed', ({ animal, trickId }) => {
+        const s = this.animals.get(animal.id);
+        if (!s) return;
+        s.perform(getTrick(trickId)?.move ?? 'hop');
+        this.fx.floatText(s.x, s.y - 100, getTrick(trickId)?.icon ?? '⭐', '#e0628b', 36);
+        this.fx.hearts(s.x, s.y - 70, 2);
+      }),
+      events.on('trickLearned', ({ animal }) => {
+        const s = this.animals.get(animal.id);
+        if (s) this.fx.burst(s.x, s.y - 50, [0xffd84d, 0xff9fc4, 0xffffff], 12);
       }),
       events.on('animalPetted', ({ animal }) => {
         const s = this.animals.get(animal.id);

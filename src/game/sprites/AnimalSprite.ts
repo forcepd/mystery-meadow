@@ -6,7 +6,9 @@ import type { Badge } from '../../sim/GameSim';
 import type { Animal, Vec2 } from '../../sim/types';
 import { COLORS, FONT, TEXT_RESOLUTION } from '../constants';
 import { drawCritter } from './critter';
+import { drawOutfit } from './outfits';
 import { showSymptom, type SymptomHandle } from './symptoms';
+import type { TrickMove } from '../../config/tricks';
 
 const BABY_SCALE = 0.65;
 const WALK_SPEED = 110; // world px per second
@@ -39,6 +41,10 @@ export class AnimalSprite extends Phaser.GameObjects.Container {
   /** Body motion from symptoms (limp, shiver), separate from breathing and hopping. */
   private readonly pose: Phaser.GameObjects.Container;
   private readonly symptomLayer: Phaser.GameObjects.Container;
+  /** Pet outfits (DESIGN 10.3): capes behind the animal, everything else in front. */
+  private readonly outfitBack: Phaser.GameObjects.Graphics;
+  private readonly outfitFront: Phaser.GameObjects.Graphics;
+  private outfitKey = '';
   private symptom: { key: string; handle: SymptomHandle } | undefined;
   private readonly art: Phaser.GameObjects.Graphics;
   private readonly label: Phaser.GameObjects.Text;
@@ -75,7 +81,14 @@ export class AnimalSprite extends Phaser.GameObjects.Container {
     const shadow = scene.add.ellipse(0, 24, 76, 20, 0x000000, 0.12);
     this.art = scene.add.graphics();
     this.symptomLayer = scene.add.container(0, 0);
-    this.breather = scene.add.container(0, 0, [this.art, this.symptomLayer]);
+    this.outfitBack = scene.add.graphics();
+    this.outfitFront = scene.add.graphics();
+    this.breather = scene.add.container(0, 0, [
+      this.outfitBack,
+      this.art,
+      this.outfitFront,
+      this.symptomLayer,
+    ]);
     this.pose = scene.add.container(0, 0, [this.breather]);
     this.figure = scene.add.container(0, 0, [this.pose]);
     this.label = scene.add
@@ -129,6 +142,11 @@ export class AnimalSprite extends Phaser.GameObjects.Container {
       .map((i) => (i === 'sick' && sickIcon) || ICONS[i])
       .join('');
     this.syncSymptom(illness?.symptomFx);
+    const outfitKey = JSON.stringify(animal.outfit);
+    if (outfitKey !== this.outfitKey) {
+      this.outfitKey = outfitKey;
+      drawOutfit(this.outfitBack, this.outfitFront, animal);
+    }
     const key = `${displayName(animal)}|${icons}|${baby}`;
     if (key !== this.lastKey) {
       this.lastKey = key;
@@ -209,6 +227,68 @@ export class AnimalSprite extends Phaser.GameObjects.Container {
 
   setSelected(selected: boolean): void {
     this.selectRing.setVisible(selected);
+  }
+
+  /** A trick (DESIGN 11): a little move, then back to normal. */
+  perform(move: TrickMove): void {
+    if (this.reducedMotion() || this.leaving) return;
+    const s = this.scene;
+    s.tweens.killTweensOf(this.pose);
+    this.pose.setAngle(0).setScale(1).setPosition(0, 0);
+    const done = () => this.pose.setAngle(0).setScale(1).setPosition(0, 0);
+    switch (move) {
+      case 'hop':
+        s.tweens.add({
+          targets: this.pose,
+          y: -50,
+          duration: 220,
+          yoyo: true,
+          repeat: 1,
+          ease: 'Quad.easeOut',
+          onComplete: done,
+        });
+        break;
+      case 'spin':
+        s.tweens.add({
+          targets: this.pose,
+          scaleX: -1,
+          duration: 160,
+          yoyo: true,
+          repeat: 2,
+          onComplete: done,
+        });
+        break;
+      case 'wiggle':
+        s.tweens.add({
+          targets: this.pose,
+          angle: { from: -15, to: 15 },
+          duration: 140,
+          yoyo: true,
+          repeat: 3,
+          onComplete: done,
+        });
+        break;
+      case 'roll':
+        s.tweens.add({
+          targets: this.pose,
+          angle: 360,
+          duration: 700,
+          ease: 'Sine.easeInOut',
+          onComplete: done,
+        });
+        break;
+      case 'bow':
+        s.tweens.add({
+          targets: this.pose,
+          scaleY: 0.75,
+          y: 8,
+          duration: 260,
+          yoyo: true,
+          hold: 200,
+          onComplete: done,
+        });
+        break;
+    }
   }
 
   /** Picked up by the player's finger (drag-to-door). */

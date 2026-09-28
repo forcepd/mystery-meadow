@@ -26,8 +26,19 @@ export type AppEvents = {
    * every Pet Slot is full, so the Pets (Swap) screen asks where it goes.
    */
   openScreen: {
-    screen: 'pets' | 'dex' | 'store' | 'realEstate' | 'style' | 'settings' | null;
+    screen:
+      | 'pets'
+      | 'dex'
+      | 'store'
+      | 'realEstate'
+      | 'style'
+      | 'settings'
+      | 'training'
+      | 'petWardrobe'
+      | null;
     incomingId?: string;
+    /** The animal a training or pet-wardrobe screen is for. */
+    animalId?: string;
   };
   /** Which Phaser scene is showing. */
   sceneChanged: { scene: 'yard' | 'house' | 'vet' };

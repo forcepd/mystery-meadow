@@ -817,3 +817,95 @@ A brand-new player goes from first launch to their first sale entirely through t
 - The PIN keeps kids out casually but isn't cryptographically strong (see above). Clearing site data resets everything.
 - The first tutorial visitor can be pregnant; its babies then sit next to it. That's fine for play, but the e2e test tries each animal for the sale because of it.
 - Real-device check still pending: the on-screen keyboard during onboarding and renaming on iPad, and downloading and loading backups in iPad Safari (Files app).
+
+## Phase 9: Tricks and Pet Outfits (built 2026-09-28)
+
+### What was built
+
+**Content**
+
+- **`src/config/tricks.ts`:** the 8 DESIGN 11 tricks (Sit, Spin, High-Five, Roll Over, Jump, Dance, Wave, Fetch), each with an icon and a world animation (`hop`, `spin`, `wiggle`, `roll`, `bow`), plus the five Simon-says cues (← ↑ → ↓ ⭐).
+- **Pet Boutique** (`items.ts`, `petOutfit` category, coins), 11 outfits:
+  - Head: Party Hat, Big Bow, Flower Clip, Royal Crown.
+  - Body: Cozy Sweater, Hero Cape, Tutu, Warm Scarf.
+  - Face: Round Glasses, Bandana, Star Shades.
+- **Per-species outfit anchors** (`species.ts`: `outfitAnchors`, head/face/body positions and scale). Every species uses the placeholder critter's defaults for now; a species with its own art (Phase 10) just overrides them.
+
+**Sim (`systems/tricks.ts`, `systems/petOutfits.ts`)**
+
+- **`trainSession(animalId, trickId, success)`:**
+  - The sim decides every rule; the UI only reports whether the round was won.
+  - Blocked when: sick, resting (5 minutes after a *successful* session), the trick is already known, or the rarity cap is reached (2/3/4/5/6).
+  - A mistake changes nothing, so the kid can try again right away (your choice).
+  - 3 successes learn the trick. Learning pays **5 gems, once per animal and trick**, up to what's left of today's cap.
+  - **The daily cap** (`settings.dailyTrickGemCap`, default 40, adjustable in Parent Mode) counts every animal together. It resets at the player's local midnight (`dayKey`). A capped trick is still learned, just without gems.
+- **`performTrick`:** kept pets only, known tricks only, **+10 happiness, no cooldown** (your choice).
+- **`dressPet` / `undressPet`:** outfits are **bought once, and any number of animals can wear them** (your choice). One outfit per slot.
+- **Events:** `trickPracticed`, `trickLearned` (with gems), `trickPerformed`, `petDressed`. The game saves right after each, and learning a trick goes in the activity log.
+- **No save migration:** every field (`animal.tricks`, `animal.outfit`, `meta.dailyTrickGems`, the settings cap) was already there.
+
+**UI**
+
+- **Animal Card:**
+  - 🎓 Train and 👒 Dress.
+  - For kept pets that know tricks, a row of **Perform** buttons (one per known trick).
+  - "Tricks: Spin, Sit (2/4)".
+  - Treat and Sell now sit side by side so the taller card still fits on an iPad mini.
+- **Training screen:**
+  - Pick a trick: icon, name, and stars for progress; learned tricks are ticked; blocked ones explain why when tapped.
+  - "💎 N trick gems left today".
+  - **Simon says:** the animal hops toward each cue while it lights up (3, then 4, then 5 cues over the 3 sessions), then "Your turn!" on a big plus-shaped pad.
+  - Results: "Great job! ⭐⭐☆ … Come back in 5 minutes!" / "Pip learned Sit! +5 💎" / "Almost! … Try again!".
+  - Each cue is announced for screen readers.
+- **Pet Wardrobe:** Head / Body / Face with the outfits owned, "Nothing", and what's worn. With no outfits yet it links to the 🎀 Pet Boutique.
+- **Home Store:** a 🎀 Pet Boutique tab.
+- **World:**
+  - Outfits are drawn on every animal sprite at its species' anchors. Capes go behind the animal; everything else in front.
+  - Performing plays the trick's move, with its icon and hearts.
+  - Learning a trick bursts stars.
+  - The player's avatar now stops **beside** a tapped spot instead of standing on top of the animal it walked to.
+
+**Tests**
+
+- **Unit:** 437 in total (24 new).
+  - The trick list.
+  - 3 sessions with 5-minute rests, and mistakes being free.
+  - Sick, known, unknown, and **the cap for each rarity**.
+  - Separate progress per trick, the +10% price per trick, and stored pets keeping their training timer.
+  - Gems once per animal and trick.
+  - **The daily cap:** partial payout (3 of 5), zero after that with the trick still learned, shared by all animals, reset at the next local day, and a Parent Mode change.
+  - `dayKey` at midnight.
+  - Perform: kept pets, known tricks, +10 each time.
+  - Outfits: bought once, worn by many, one per slot, take off, not placeable, and **anchors for every species**.
+- **E2E:** 21 new runs (7 tests × 3 browser setups):
+  - Train Sit through 3 Simon-says rounds of 3, 4, and 5 cues (clock-skipped rests), earning +5 💎.
+  - A mistake, then trying again.
+  - A capped day: learned, but no gems.
+  - Sick can't train.
+  - A kept pet performs for happiness.
+  - Buy a Party Hat, dress Pip, sell Pip, then the hat is still there for Moss.
+  - **All 21 species wearing every kind of outfit with no errors.**
+
+### Phase 9 "Done when"
+
+- **Gems from tricks respect the daily cap:** unit tests (partial, zero, all animals together, daily reset, parent change) and an e2e test.
+- **Outfits render on every species:** anchors are unit-tested for every species, an e2e test renders all 21 in outfits without errors, and a screenshot check looked right.
+
+### Deviations from the spec (your choices)
+
+1. **Outfits are bought once, and any animal can wear them.** DESIGN 10.3 says outfits "return to inventory when an animal is sold". Since wearing never uses one up, there's nothing to return: after a sale the outfit is simply still yours. Selling no longer adds worn outfits to the inventory, which would have duplicated them.
+2. **Perform: +10 happiness, no cooldown.** It doesn't share petting's cooldown.
+3. **A training mistake doesn't start the 5-minute rest.** Only a successful session does.
+
+### Defaults chosen (spec left open): please confirm or change
+
+1. **Simon-says length:** 3 → 4 → 5 cues for sessions 1 → 3 (`tricks.cuesPerSession`). Cues are ← ↑ → ↓ and ⭐.
+2. **The daily cap resets at local midnight** on the kid's device. A partly capped trick pays only what's left (e.g. 3 of 5).
+3. **Which animals can train:** any animal, not just kept pets (tricks raise the sale price), but not while sick.
+4. **Outfit prices** are 30–120 coins (`items.ts`).
+
+### Known issues
+
+- Portraits in the card, training, and wardrobe screens are plain color circles until the Phase 10 art pass (the yard sprites do show the outfits).
+- Trick moves are simple tweens; each trick could get its own animation in Phase 10.
+- The Simon-says round lives in React, not a Phaser `TrainingScene` as DESIGN 18.3's folder sketch suggests; it keeps all the rules in the sim either way.

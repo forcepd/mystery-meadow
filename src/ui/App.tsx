@@ -12,6 +12,8 @@ import { RealEstate } from './RealEstate';
 import { SettingsScreen } from './SettingsScreen';
 import { StyleScreen } from './StyleScreen';
 import { TutorialCoach } from './TutorialCoach';
+import { TrainingScreen } from './TrainingScreen';
+import { PetWardrobe } from './PetWardrobe';
 import { SessionProvider } from './session';
 import { Toasts } from './Toasts';
 import { VetClinic } from './VetClinic';
@@ -34,6 +36,8 @@ export function App({ session }: { session: GameSession }) {
         <RealEstate />
         <StyleScreen />
         <SettingsScreen />
+        <TrainingScreen />
+        <PetWardrobe />
         <TutorialCoach />
         <Toasts />
         {DebugPanel && (
