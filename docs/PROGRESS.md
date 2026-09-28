@@ -791,6 +791,10 @@ DESIGN 15.1 calls the Manor "a multi-week goal". The bot is perfect: it taps eve
   - All onboarding screens pass the 48 px touch-target check.
 - The old e2e tests now seed a device record (PIN `1234`) and tap their profile in the picker.
 
+### Bugs found and fixed (after Phase 8)
+
+- **The menu buttons covered the Vet Clinic's exam tools.** The HUD menu (and ⚙️) stayed up in the clinic, over the bottom half of the stethoscope, thermometer, and magnifying glass. They now step aside in the clinic, as they already did in Decorate mode. The old vet tests only tapped the *centers* of the tools, which sit just above the menu, so they missed it. A new e2e test checks every corner of every tool is the game canvas, and that the menu comes back in the yard.
+
 ### Phase 8 "Done when"
 
 A brand-new player goes from first launch to their first sale entirely through the real UI. The e2e test above does exactly that on desktop Chromium, iPad mini, and iPad Pro.

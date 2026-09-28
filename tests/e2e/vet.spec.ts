@@ -65,6 +65,38 @@ test.describe('health and vet', () => {
     await expect(card.getByText('Too sick to sell. Visit the vet!')).toBeVisible();
   });
 
+  test('nothing covers the exam tools (the menu steps aside in the clinic)', async ({ page }) => {
+    await startWithSickBunny(page, 100);
+    await expect(page.getByRole('navigation', { name: 'Menu' })).toBeVisible();
+    await openClinic(page, /go to vet for 20/i);
+    await expect(page.getByRole('navigation', { name: 'Menu' })).toBeHidden();
+    await expect(page.getByRole('button', { name: 'Settings' })).toBeHidden();
+    // Every corner of every tool button is the game canvas, not a UI element on top.
+    const box = (await page.locator('[data-testid="game-canvas"] canvas').boundingBox())!;
+    const scale = box.width / WORLD_WIDTH;
+    const { width, height } = VET_LAYOUT.tools;
+    for (let i = 0; i < EXAM_TOOLS.length; i++) {
+      const c = vetToolPoint(i);
+      for (const [dx, dy] of [
+        [-1, -1],
+        [1, -1],
+        [-1, 1],
+        [1, 1],
+      ] as const) {
+        const x = box.x + (c.x + dx * (width / 2 - 8)) * scale;
+        const y = box.y + (c.y + dy * (height / 2 - 8)) * scale;
+        const tag = await page.evaluate(
+          ([px, py]) => document.elementFromPoint(px!, py!)?.tagName,
+          [x, y],
+        );
+        expect(tag, `tool ${i} corner ${dx},${dy}`).toBe('CANVAS');
+      }
+    }
+    // Back in the yard, the menu returns.
+    await press(page, page.getByRole('button', { name: 'Back to the yard' }));
+    await expect(page.getByRole('navigation', { name: 'Menu' })).toBeVisible();
+  });
+
   test('pay the fee, find clues, a wrong treatment, then the cure', async ({ page }) => {
     await startWithSickBunny(page, 100);
     const clinic = await openClinic(page, /go to vet for 20/i);

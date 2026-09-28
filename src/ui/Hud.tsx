@@ -15,9 +15,14 @@ export function Hud() {
   const { sim, profile } = useSim();
   const [zone, setZone] = useState<'yard' | 'house'>('yard');
   const [decorating, setDecorating] = useState(false);
+  const [inVet, setInVet] = useState(false);
+  // The menu and ⚙️ step aside while decorating (the tray takes the bottom) and in the Vet
+  // Clinic (the exam tools sit along the bottom).
+  const hideMenu = decorating || inVet;
   useAppEvent(
     'sceneChanged',
     useCallback(({ scene }) => {
+      setInVet(scene === 'vet');
       if (scene !== 'vet') setZone(scene);
     }, []),
   );
@@ -69,7 +74,7 @@ export function Hud() {
         </div>
       </div>
 
-      <nav className={styles.nav} aria-label="Menu" hidden={decorating}>
+      <nav className={styles.nav} aria-label="Menu" hidden={hideMenu}>
         <button
           type="button"
           className={`${common.pill} ${styles.zone}`}
@@ -161,7 +166,7 @@ export function Hud() {
         type="button"
         className={`${common.iconButton} ${styles.gear}`}
         aria-label="Settings"
-        hidden={decorating}
+        hidden={hideMenu}
         onClick={() => appBus.emit('openScreen', { screen: 'settings' })}
       >
         ⚙️
