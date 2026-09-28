@@ -1,10 +1,12 @@
 import Phaser from 'phaser';
 import { parseHex } from '../../art/palette';
 import { displayName, variantOf } from '../../bridge/describe';
+import { getIllness, type SymptomFx } from '../../config/illnesses';
 import type { Badge } from '../../sim/GameSim';
 import type { Animal, Vec2 } from '../../sim/types';
 import { COLORS, FONT, TEXT_RESOLUTION } from '../constants';
 import { drawCritter } from './critter';
+import { showSymptom, type SymptomHandle } from './symptoms';
 
 const BABY_SCALE = 0.65;
 const WALK_SPEED = 110; // world px per second
@@ -16,7 +18,7 @@ const LOW_NEED = 25;
 
 type Icon = Badge | 'hungry' | 'sad';
 const ICONS: Partial<Record<Icon, string>> = {
-  sick: '🤒',
+  sick: '🤒', // Replaced by the illness's own symptom icon when known.
   hungry: '🍽️',
   sad: '😢',
   pregnant: '🍼',
@@ -34,6 +36,10 @@ export class AnimalSprite extends Phaser.GameObjects.Container {
   readonly animalId: string;
   private readonly figure: Phaser.GameObjects.Container;
   private readonly breather: Phaser.GameObjects.Container;
+  /** Body motion from symptoms (limp, shiver), separate from breathing and hopping. */
+  private readonly pose: Phaser.GameObjects.Container;
+  private readonly symptomLayer: Phaser.GameObjects.Container;
+  private symptom: { key: string; handle: SymptomHandle } | undefined;
   private readonly art: Phaser.GameObjects.Graphics;
   private readonly label: Phaser.GameObjects.Text;
   private readonly badge: Phaser.GameObjects.Text;
@@ -54,6 +60,8 @@ export class AnimalSprite extends Phaser.GameObjects.Container {
     start: Vec2,
     home: Vec2,
     private readonly reducedMotion: () => boolean,
+    /** False keeps it standing still (the patient on the vet's table). */
+    private readonly amble = true,
   ) {
     super(scene, start.x, start.y);
     this.animalId = animal.id;
@@ -65,8 +73,10 @@ export class AnimalSprite extends Phaser.GameObjects.Container {
       .setVisible(false);
     const shadow = scene.add.ellipse(0, 24, 76, 20, 0x000000, 0.12);
     this.art = scene.add.graphics();
-    this.breather = scene.add.container(0, 0, [this.art]);
-    this.figure = scene.add.container(0, 0, [this.breather]);
+    this.symptomLayer = scene.add.container(0, 0);
+    this.breather = scene.add.container(0, 0, [this.art, this.symptomLayer]);
+    this.pose = scene.add.container(0, 0, [this.breather]);
+    this.figure = scene.add.container(0, 0, [this.pose]);
     this.label = scene.add
       .text(0, 36, '', {
         fontFamily: FONT,
@@ -111,10 +121,13 @@ export class AnimalSprite extends Phaser.GameObjects.Container {
     const active = new Set<Icon>(badges);
     if (animal.needs.hunger < LOW_NEED) active.add('hungry');
     if (animal.needs.happiness < LOW_NEED) active.add('sad');
+    const illness = animal.sickness && getIllness(animal.sickness.illnessId);
+    const sickIcon = animal.sickness?.atClinicUntil !== undefined ? '🏥' : illness?.symptomIcon;
     const icons = ICON_ORDER.filter((i) => active.has(i))
       .slice(0, 2)
-      .map((i) => ICONS[i])
+      .map((i) => (i === 'sick' && sickIcon) || ICONS[i])
       .join('');
+    this.syncSymptom(illness?.symptomFx);
     const key = `${displayName(animal)}|${icons}|${baby}`;
     if (key !== this.lastKey) {
       this.lastKey = key;
@@ -133,7 +146,7 @@ export class AnimalSprite extends Phaser.GameObjects.Container {
 
   preUpdate(time: number): void {
     this.setDepth(this.y);
-    if (this.leaving || this.walkTween?.isPlaying() || this.reducedMotion()) return;
+    if (!this.amble || this.leaving || this.walkTween?.isPlaying() || this.reducedMotion()) return;
     if (time < this.nextAmbleAt) return;
     this.nextAmbleAt = time + 2500 + Math.random() * 4000;
     const angle = Math.random() * Math.PI * 2;
@@ -168,6 +181,28 @@ export class AnimalSprite extends Phaser.GameObjects.Container {
         onDone?.();
       },
     });
+  }
+
+  /** Starts or stops the illness look (only when it changes). */
+  private syncSymptom(kind: SymptomFx | undefined): void {
+    if (this.symptom?.key === kind) return;
+    this.symptom?.handle.stop();
+    this.symptom = undefined;
+    if (!kind) return;
+    const handle = showSymptom(kind, {
+      scene: this.scene,
+      layer: this.symptomLayer,
+      pose: this.pose,
+      reducedMotion: this.reducedMotion(),
+    });
+    this.symptom = { key: kind, handle };
+  }
+
+  override destroy(fromScene?: boolean): void {
+    // A closing scene cleans up its own tweens and timers.
+    if (!fromScene) this.symptom?.handle.stop();
+    this.symptom = undefined;
+    super.destroy(fromScene);
   }
 
   setSelected(selected: boolean): void {

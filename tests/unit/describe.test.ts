@@ -45,6 +45,14 @@ describe('toasts (DESIGN 17.4)', () => {
     expect(TOASTS.animalSold!({ animal: mom, price: 45 })?.text).toBe(
       'Biscuit went to a loving new home! +45',
     );
+    expect(TOASTS.animalSick!({ animal: mom, illnessId: 'sniffles' })).toEqual({
+      icon: '🤧',
+      text: 'Oh no, Biscuit looks sick!',
+    });
+    expect(TOASTS.clinicReady!({ animal: mom })?.text).toBe('The vet is ready to see Biscuit!');
+    expect(TOASTS.animalCured!({ animal: mom, illnessId: 'sniffles' })?.text).toBe(
+      'Biscuit is all better!',
+    );
   });
 
   it('summarizes the time away, or says nothing if nothing happened', () => {

@@ -288,6 +288,8 @@ describe('effects of sickness (DESIGN 9.3)', () => {
     expect(h.sim.canSell('x')).toEqual({ ok: false, reason: 'Too sick to sell. Visit the vet!' });
     expect(h.sim.sell('x').ok).toBe(false);
     expect(h.sim.canTrain('x').ok).toBe(false);
+    expect(h.sim.badges('x')).toContain('sick');
+    expect(h.sim.badges('x')).not.toContain('readyToSell');
   });
 
   it('happiness drains twice as fast', () => {

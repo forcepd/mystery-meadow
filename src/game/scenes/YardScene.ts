@@ -22,6 +22,8 @@ interface Press {
   start: Vec2;
   timer: Phaser.Time.TimerEvent;
   held: boolean;
+  /** Real time the press began (the game-loop timer lags when frames are slow). */
+  startedAt: number;
 }
 
 /**
@@ -271,6 +273,7 @@ export class YardScene extends Phaser.Scene {
       animalId,
       start: { x: pointer.worldX, y: pointer.worldY },
       held: false,
+      startedAt: performance.now(),
       timer: this.time.delayedCall(HOLD_MS, () => {
         press.held = true;
         this.petAnimal(animalId);
@@ -284,7 +287,10 @@ export class YardScene extends Phaser.Scene {
     if (!press) return;
     this.press = null;
     press.timer.remove(false);
-    if (released && !press.held) appBus.emit('selectAnimal', { id: press.animalId });
+    if (!released || press.held) return;
+    // Held long enough but the timer didn't get to fire (slow frames): still a pet, not a tap.
+    if (performance.now() - press.startedAt >= HOLD_MS) this.petAnimal(press.animalId);
+    else appBus.emit('selectAnimal', { id: press.animalId });
   }
 
   private petAnimal(animalId: string): void {

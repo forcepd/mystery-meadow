@@ -3,6 +3,7 @@ import { RARITY_STYLE, starString } from '../art/palette';
 import { appBus } from '../bridge/appBus';
 import { displayName, formatCountdown, speciesName, variantOf } from '../bridge/describe';
 import { BALANCE } from '../config/balance';
+import { getIllness } from '../config/illnesses';
 import type { Badge, GameSim } from '../sim/GameSim';
 import type { Animal } from '../sim/types';
 import styles from './AnimalCard.module.css';
@@ -19,7 +20,7 @@ const BADGES: Record<Badge, { icon: string; label: string }> = {
   kept: { icon: '❤️', label: 'Kept' },
 };
 
-/** DESIGN 17.3 Animal Card (through Phase 3). Opens when an animal is tapped in the world. */
+/** DESIGN 17.3 Animal Card (through Phase 4). Opens when an animal is tapped in the world. */
 export function AnimalCard() {
   const { sim } = useSim();
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -52,7 +53,19 @@ export function AnimalCard() {
   const care = sim.careMultiplier(animal.id) ?? 1;
   const carePercent = Math.round((care - 1) * 100);
   const canSell = sim.canSell(animal.id);
+  const illness = animal.sickness && getIllness(animal.sickness.illnessId);
+  const clinicUntil = animal.sickness?.atClinicUntil;
   const close = () => appBus.emit('selectAnimal', { id: null });
+
+  const goToVet = () => {
+    const result = sim.goToVet(animal.id);
+    if (!result.ok) {
+      setMessage(result.reason);
+      return;
+    }
+    close();
+    appBus.emit('openVet', { animalId: animal.id });
+  };
 
   /** Runs a command; shows its reason if it's refused. */
   const act = (run: () => { ok: boolean; reason?: string }) => {
@@ -121,6 +134,18 @@ export function AnimalCard() {
       </p>
 
       <ul className={styles.status}>
+        {animal.sickness && (
+          <li data-testid="sick-status" className={styles.sick}>
+            <span aria-hidden="true">{illness?.symptomIcon ?? '🤒'}</span>{' '}
+            {illness?.symptoms ?? 'Not feeling well'}
+          </li>
+        )}
+        {clinicUntil !== undefined && (
+          <li>
+            <span aria-hidden="true">🏥</span> Free Clinic: the vet is ready in{' '}
+            <strong>{formatCountdown(clinicUntil - now)}</strong>
+          </li>
+        )}
         {animal.pregnancy && (
           <li>
             <span aria-hidden="true">🍼</span> Babies coming in{' '}
@@ -135,7 +160,11 @@ export function AnimalCard() {
         )}
         {!animal.isKept && (
           <li data-testid="hold-status">
-            {now >= animal.holdUntil ? (
+            {now >= animal.holdUntil && animal.sickness ? (
+              <>
+                <span aria-hidden="true">🩺</span> Ready to sell once it’s better
+              </>
+            ) : now >= animal.holdUntil ? (
               <>
                 <span aria-hidden="true">🪙</span> <strong>Ready to sell!</strong>
               </>
@@ -158,6 +187,7 @@ export function AnimalCard() {
       </ul>
 
       <div className={styles.actions}>
+        {animal.sickness && <VetButton sim={sim} animal={animal} onPress={goToVet} />}
         <button
           type="button"
           className={`${common.button} ${styles.secondary}`}
@@ -180,6 +210,29 @@ export function AnimalCard() {
         )}
       </div>
     </aside>
+  );
+}
+
+/** "Go to Vet" (DESIGN 17.3): shows the fee, the Free Clinic, or the way back in. */
+function VetButton({
+  sim,
+  animal,
+  onPress,
+}: {
+  sim: GameSim;
+  animal: Animal;
+  onPress: () => void;
+}) {
+  const visit = animal.sickness?.visit;
+  const quote = sim.vetQuote();
+  let label: string;
+  if (visit) label = 'Back to the vet';
+  else if (quote.free) label = 'Free Clinic';
+  else label = `Go to Vet for ${quote.fee}`;
+  return (
+    <button type="button" className={`${common.button} ${styles.vet}`} onClick={onPress}>
+      <span aria-hidden="true">{visit || !quote.free ? '🩺' : '🏥'}</span> {label}
+    </button>
   );
 }
 

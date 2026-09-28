@@ -3,7 +3,7 @@ import { DEFAULT_PROFILE, GameSession } from '../../src/bridge/gameSession';
 import { MemoryStore, type KeyValueStore } from '../../src/save/SaveManager';
 import { saveKey, type SaveFile } from '../../src/save/schema';
 import { FakeClock } from '../../src/sim/clock';
-import { debugSetNeeds, debugSpawnVisitor } from '../../src/sim/debugCommands';
+import { debugMakeSick, debugSetNeeds, debugSpawnVisitor } from '../../src/sim/debugCommands';
 import { BALANCE } from '../../src/config/balance';
 import { HOUR, MIN, SEC, START } from './sim/helpers';
 
@@ -72,6 +72,22 @@ describe('GameSession', () => {
     session.sim.feedTreat(id);
     await session.save();
     expect((await saved(store)).world.coins).toBe(BALANCE.startingCoins - BALANCE.treat.cost);
+  });
+
+  it('saves right after a vet visit fee and a treatment', async () => {
+    const { session, store } = await start();
+    debugSpawnVisitor(session.sim, { speciesId: 'bunny', pregnant: false });
+    session.sim.revealVisitor(session.sim.state.world.gateQueue[0]!.id);
+    const id = session.sim.state.world.animals[0]!.id;
+    debugMakeSick(session.sim, { illnessId: 'sore_paw' });
+    session.sim.goToVet(id);
+    await session.save();
+    const afterFee = await saved(store);
+    expect(afterFee.world.coins).toBe(BALANCE.startingCoins - BALANCE.vet.visitFee);
+    expect(afterFee.world.animals[0]!.sickness?.visit).toBe('paid');
+    session.sim.vetTreat(id, 'bandage');
+    await session.save();
+    expect((await saved(store)).world.animals[0]!.sickness).toBeUndefined();
   });
 
   it('saves when hidden and treats hidden time as offline when visible again', async () => {

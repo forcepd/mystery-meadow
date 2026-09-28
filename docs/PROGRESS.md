@@ -319,3 +319,120 @@ Everything short of that is verified locally: build, unit tests, and e2e on emul
 - House bowls, beds, and coziness come with the House in Phase 6. `tickFeeding` already works per zone.
 - Headless test browsers can't show color emoji, so 🍽️, 🪙 and friends look gray in screenshots only.
 - Real-device check still pending: iPad tap-and-hold feel, and the on-screen keyboard with the rename field.
+
+## Phase 4: Health and Vet (built 2026-09-27)
+
+### What was built
+
+**Content (`src/config/illnesses.ts`)**
+
+- The 6 illnesses from DESIGN 9.4. Each has a yard symptom icon, short visible symptoms, a symptom animation kind, the correct treatment, and clues for each exam tool.
+- 3 exam tools (🩺 Stethoscope, 🌡️ Thermometer, 🔍 Magnifying Glass) and a 6-treatment cabinet.
+- Adding an illness is a data entry that reuses one of the 6 animation kinds.
+- Config tests check that no two illnesses give the same clues through all three tools, so every illness can be diagnosed.
+
+**Sim**
+
+- `systems/sickness.ts`: once per simulated minute, each healthy animal rolls using the exact DESIGN 9.1 formula:
+  - Base 0.002, ×2 when hunger < 25, ×2 with ≥ 3 poops in the zone, ×1.5 when happiness < 25.
+  - Plus 0.01 for each contagious animal in the same zone.
+  - The roll never happens offline, or when `settings.sicknessEnabled` is off.
+  - Kept pets out in the world can get sick. Stored pets can't.
+  - An immunity (30 min after a cure) protects against that illness. Expired immunities are pruned.
+  - Emits `animalSick`.
+- **Contagion copies the illness:**
+  - One roll decides both whether the animal gets sick and what it gets. A roll in the contagion share catches that neighbor's illness, so an outbreak is all one illness.
+  - Everyone rolls against the same snapshot, so an outbreak spreads one step per minute.
+- **Effects:** can't sell, can't train (`canTrain` is ready for Phase 9), and happiness drains ×2. Never fatal.
+- `systems/vet.ts`:
+  - `goToVet`: pays the 20 fee once, or starts the Free Clinic. Going back is free.
+  - `vetExamine`: returns the tool's clues and changes nothing.
+  - `vetTreat`: 10 coins. The wrong treatment is spent with no effect. The right one cures and gives immunity.
+  - Events: `vetVisitStarted`, `clinicReady`, `vetTreated`, `animalCured`.
+- **Free Clinic (your choice):** if coins < fee + one treatment (30), the visit and all its treatments are free after a 3-minute wait. On a paid visit, a treatment you can't afford is free too. The wait keeps running offline.
+- A sick animal doesn't show the "Ready to sell" badge.
+- Economy harness: both bots take sick animals to the vet (25% of the time trying one wrong treatment first). The report adds sickness cases/hour, Free Clinic visits, and vet coins.
+
+**Save v3:** `sickness.visit` ('paid' | 'free') records a check-in, so leaving the clinic or reloading never charges twice. The v2 → v3 migration only bumps the version (nobody could be sick before v3). The game also saves after vet fees and treatments.
+
+**World and UI**
+
+- **Yard:** each sick animal shows its illness's icon (🤧 🤢 🐜 🐾 🌡️ 💤, or 🏥 while waiting at the Free Clinic) and a placeholder animation:
+  - A drippy nose and "achoo!"
+  - Green cheeks and a wobbly tummy
+  - Bouncing flea dots and scratching
+  - A pink sore paw and a limp
+  - Red spots and a warm glow
+  - Droopy eyes and floating Z's
+  - All of them hold still with reduced motion.
+- **Animal Card:**
+  - Shows the symptoms ("Sneezing a lot"), not the diagnosis.
+  - A 🩺 "Go to Vet for 20" / 🏥 "Free Clinic" / "Back to the vet" button.
+  - A Free Clinic countdown, and "Ready to sell once it's better".
+- **`VetScene` (Phaser):** the patient stands on an exam table with 3 big tool buttons. Tap a tool, or drag it onto the patient. It goes over, wiggles, and pops up the clue icons. A drop anywhere else sends it back to the tray. The treatment icon shows over the patient; a cure gets stars and hearts, a wrong one a head-shake and "?". The yard sleeps meanwhile.
+- **Clinic panel (React):**
+  - Visit type, and a clue notebook listing each clue by tool.
+  - A 2×3 treatment cabinet showing the cost ("10 coins each" / "Free").
+  - A waiting room with a countdown.
+  - "Hmm, that didn't work. Look at the clues again."
+  - An "is all better!" screen, and Back to the yard.
+- **Toasts:** "Oh no, Pip looks sick!", "The vet is ready to see Pip!", and "Pip is all better!".
+- **Debug Panel:** make one or all animals sick (random or chosen illness), cure all, and turn sickness rolls on/off.
+
+**Tests**
+
+- **Unit:** 281 in total (68 new).
+  - Every multiplier and its threshold edge.
+  - Contagion is same-zone only, and waiting animals aren't contagious.
+  - Statistical checks over 100k rolls: base rate, fully neglected rate, all illnesses picked about evenly, contagion copies the illness.
+  - One step per minute, immunity and pruning, offline, and turned off.
+  - Stored vs kept pets, and the effects of sickness.
+  - Fee once, and refusals.
+  - Clues change nothing.
+  - Each illness is cured by its own treatment and nothing else.
+  - A clue-only "detective" diagnoses all 6.
+  - Free Clinic rules, and a paid visit where the next treatment can't be afforded.
+  - The migration, save-after-vet, and the new toasts.
+- **No-stuck proof:** at 0, 1, 5, 10, 19, 20, 25, 29, 30, 31, 45, and 100 coins, six animals (one with each illness) all get cured and sold. At every step the check confirms the next action is affordable. Also a 3-hour neglected game at 0 coins recovers.
+- **E2E:** 36 new runs (12 tests × 3 browser setups):
+  - The symptom shows, and Sell is refused.
+  - Paid visit → clue → wrong treatment → cure → sell.
+  - Dragging a tool onto the patient (and not elsewhere).
+  - A paid visit survives a reload.
+  - The Free Clinic waiting room.
+  - The Free Clinic's free cure after the wait.
+  - Diagnosing and curing each of the 6 illnesses from the clues in the UI.
+
+### Phase 4 "Done when"
+
+- **A player can diagnose and cure all 6 illnesses:** e2e tests do it in the real UI for each illness, using only the clues shown.
+- **The game can't get stuck at 0 coins with sick animals:** the unit tests above.
+
+### Economy (24 h × 30 runs)
+
+- A caring bot has ~9.6 illnesses/day and spends ~310 coins/day at the vet (~13/hour).
+- A neglectful bot has ~19/day and spends ~630 (~26/hour).
+- Gross earnings are unchanged within seed noise (different seed ranges swing ±40/hour).
+
+### Bugs found and fixed
+
+- **Petting sometimes opened the card instead** (a Phase 3 bug): the hold was timed only by Phaser's game-loop timer, so with slow frames a real 800 ms hold ended before the timer fired. The e2e suite exposed it under full parallel load; a slow iPad could hit it too. On release, the yard now also checks real elapsed time.
+- The visitor-schedule unit test depended on seed luck (it failed once sickness rolls shifted the RNG). It now counts Crowded-skipped arrivals too.
+
+### Defaults chosen (spec left open): please confirm or change
+
+1. **Free Clinic** covers the visit *and* treatments when coins < 30 (fee + one treatment), after a 3-min wait. On a paid visit, a treatment you can't afford is free. (Your answer.)
+2. **Contagion gives the neighbor's illness** (your answer); the base-risk share gives a random one.
+3. **Specific symptom icons in the yard** (your answer). The card shows symptoms, not the illness name.
+4. **Exam is optional:** you can pick a treatment before using any tool.
+5. **Waiting at the Free Clinic:** the animal stays in the yard with a 🏥 icon, but isn't contagious while waiting. You can leave and come back.
+6. **Immunity** is to the cured illness only (DESIGN 9.1 "the same illness").
+7. **Clue texts, symptom icons, and treatment icons** are in `illnesses.ts`: edit them freely.
+8. The clinic panel covers the right ~38% of the screen. The scene keeps everything left of that.
+
+### Known issues
+
+- "Tricky cases" (two illnesses at once) are Phase 10 per DESIGN 9.5.6. The sneeze sound is Phase 10 audio.
+- Symptom animations are placeholders until the Phase 10 art pass.
+- Headless test browsers show some emoji gray (🪙) in screenshots only.
+- Real-device check still pending: dragging tools on an iPad, and the clinic panel on iPad mini.

@@ -7,6 +7,7 @@ import { Hud } from './Hud';
 import { RotateScreen } from './RotateScreen';
 import { SessionProvider } from './session';
 import { Toasts } from './Toasts';
+import { VetClinic } from './VetClinic';
 
 // Dev builds only: `import.meta.env.DEV` is false in production, so the panel is never bundled.
 const DebugPanel = import.meta.env.DEV ? lazy(() => import('../dev/DebugPanel')) : null;
@@ -18,6 +19,7 @@ export function App({ session }: { session: GameSession }) {
         <GameCanvas />
         <Hud />
         <AnimalCard />
+        <VetClinic />
         <Toasts />
         {DebugPanel && (
           <Suspense fallback={null}>

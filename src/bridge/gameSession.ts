@@ -40,8 +40,15 @@ export class GameSession {
     readonly isNewGame: boolean,
   ) {
     sim.events.on('changed', () => this.stateVersion++);
-    // DESIGN 18.4: save after any sale or purchase. Renames too, so a quick reload keeps them.
-    for (const event of ['animalSold', 'treatGiven', 'animalRenamed'] as const) {
+    // DESIGN 18.4: save after any sale or purchase (treats, vet visits and treatments).
+    // Renames too, so a quick reload keeps them.
+    for (const event of [
+      'animalSold',
+      'treatGiven',
+      'animalRenamed',
+      'vetVisitStarted',
+      'vetTreated',
+    ] as const) {
       sim.events.on(event, () => void this.save());
     }
   }

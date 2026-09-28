@@ -85,6 +85,20 @@
   font-weight: 700;
 }
 
+.actions .vet {
+  background: #5bbfa8;
+  box-shadow: 0 4px 0 #3a9884;
+}
+
+.actions .vet:active {
+  box-shadow: 0 1px 0 #3a9884;
+}
+
+.sick {
+  color: #2f6f63;
+  font-weight: 800;
+}
+
 .actions .secondary {
   background: #f6c65b;
   box-shadow: 0 4px 0 #d49a2a;

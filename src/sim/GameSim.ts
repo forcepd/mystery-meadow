@@ -327,7 +327,8 @@ export class GameSim {
     if (isBaby(animal, now)) out.push('baby');
     if (animal.sickness) out.push('sick');
     if (animal.isKept) out.push('kept');
-    else if (isReadyToSell(animal, now)) out.push('readyToSell');
+    // A sick animal can't be sold, so it doesn't claim to be ready (DESIGN 9.3).
+    else if (isReadyToSell(animal, now) && !animal.sickness) out.push('readyToSell');
     return out;
   }
 

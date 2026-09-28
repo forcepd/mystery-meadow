@@ -36,3 +36,22 @@ export function gateSlot(index: number): Vec2 {
 export const GATE_ENTRY: Vec2 = { x: LAYOUT.gate.x + LAYOUT.gate.width / 2, y: LAYOUT.fenceY + 40 };
 
 export { WORLD_HEIGHT, WORLD_WIDTH };
+
+/**
+ * Vet Clinic scene layout (world pixels). Everything stays left of x = 760: the clinic panel
+ * (cabinet and clues) covers the right side of the screen.
+ */
+export const VET_LAYOUT = {
+  table: { x: 150, y: 500, width: 520, height: 44 },
+  /** Where the patient stands on the table (its feet touch the tabletop). */
+  patient: { x: 410, y: 452 },
+  patientScale: 1.8,
+  /** Drop a tool within this distance of the patient to use it. */
+  dropRadius: 190,
+  /** Exam tool buttons along the bottom, in EXAM_TOOLS order. */
+  tools: { y: 668, xs: [210, 410, 610], width: 150, height: 138 },
+} as const;
+
+export function vetToolPoint(index: number): Vec2 {
+  return { x: VET_LAYOUT.tools.xs[index] ?? 0, y: VET_LAYOUT.tools.y };
+}

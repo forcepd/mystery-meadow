@@ -1,4 +1,5 @@
 import { Emitter } from '../sim/emitter';
+import type { ExamResult } from '../sim/systems/vet';
 import type { ToastMessage } from './toasts';
 
 /**
@@ -14,6 +15,14 @@ export type AppEvents = {
   worldReady: undefined;
   /** A toast that doesn't come from a sim event. */
   toast: ToastMessage;
+  /** Show the Vet Clinic for this animal (already checked in with `sim.goToVet`). */
+  openVet: { animalId: string };
+  /** Leave the Vet Clinic, back to the yard. */
+  closeVet: undefined;
+  /** An exam tool was used on the patient in the clinic scene. */
+  vetExamined: { animalId: string; toolId: string; result: ExamResult };
+  /** Which Phaser scene is showing. */
+  sceneChanged: { scene: 'yard' | 'vet' };
 };
 
 export const appBus = new Emitter<AppEvents>();

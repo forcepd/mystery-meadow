@@ -1,10 +1,14 @@
 import { useState } from 'react';
+import { ILLNESSES } from '../config/illnesses';
 import { SPECIES } from '../config/species';
 import {
   debugAddCoins,
   debugAddGems,
+  debugCureAll,
+  debugMakeSick,
   debugRunOnline,
   debugSetNeeds,
+  debugSetSicknessEnabled,
   debugSpawnVisitor,
   type DebugVisitorOptions,
 } from '../sim/debugCommands';
@@ -25,6 +29,7 @@ export default function DebugPanel() {
   const [sparkle, setSparkle] = useState<'' | 'yes' | 'no'>('');
   const [pregnant, setPregnant] = useState<'' | 'no' | '1' | '2' | '3' | '4' | '5'>('');
   const [message, setMessage] = useState('');
+  const [illnessId, setIllnessId] = useState('');
 
   if (!open) {
     return (
@@ -51,6 +56,12 @@ export default function DebugPanel() {
     debugRunOnline(sim);
     setMessage(`Advanced ${minutes} min`);
   };
+
+  const makeSick = (all: boolean) => {
+    const n = debugMakeSick(sim, { all, ...(illnessId ? { illnessId } : {}) });
+    setMessage(n === 0 ? 'Nobody healthy to make sick' : `${n} got sick`);
+  };
+  const sicknessOn = sim.state.world.settings.sicknessEnabled;
 
   const newGame = async () => {
     if (!confirm('Delete this save and start a new game?')) return;
@@ -161,6 +172,34 @@ export default function DebugPanel() {
           💖 Fill all
         </button>
       </div>
+
+      <fieldset className={styles.group}>
+        <legend>Sickness</legend>
+        <select value={illnessId} onChange={(e) => setIllnessId(e.target.value)}>
+          <option value="">Random illness</option>
+          {ILLNESSES.map((i) => (
+            <option key={i.id} value={i.id}>
+              {i.symptomIcon} {i.name}
+            </option>
+          ))}
+        </select>
+        <button type="button" className={styles.small} onClick={() => makeSick(false)}>
+          🤒 One
+        </button>
+        <button type="button" className={styles.small} onClick={() => makeSick(true)}>
+          🤒 All
+        </button>
+        <button type="button" className={styles.small} onClick={() => debugCureAll(sim)}>
+          💊 Cure all
+        </button>
+        <button
+          type="button"
+          className={sicknessOn ? styles.active : styles.small}
+          onClick={() => debugSetSicknessEnabled(sim, !sicknessOn)}
+        >
+          Rolls {sicknessOn ? 'on' : 'off'}
+        </button>
+      </fieldset>
 
       <div className={styles.row}>
         <button

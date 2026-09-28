@@ -1,3 +1,4 @@
+import { getIllness } from '../config/illnesses';
 import type { SimEvents } from '../sim/events';
 import { displayName, speciesName } from './describe';
 
@@ -29,6 +30,15 @@ export const TOASTS: {
     icon: '💖',
     text: `${displayName(animal)} went to a loving new home! +${price}`,
   }),
+  animalSick: ({ animal, illnessId }) => ({
+    icon: getIllness(illnessId)?.symptomIcon ?? '🤒',
+    text: `Oh no, ${displayName(animal)} looks sick!`,
+  }),
+  clinicReady: ({ animal }) => ({
+    icon: '🏥',
+    text: `The vet is ready to see ${displayName(animal)}!`,
+  }),
+  animalCured: ({ animal }) => ({ icon: '💖', text: `${displayName(animal)} is all better!` }),
   crowdedChanged: ({ crowded }) =>
     crowded
       ? { icon: '🐾', text: 'Your yard is crowded!' }

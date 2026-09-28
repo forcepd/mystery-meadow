@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import type { GameSession } from '../bridge/gameSession';
 import { COLORS, WORLD_HEIGHT, WORLD_WIDTH } from './constants';
+import { VetScene } from './scenes/VetScene';
 import { YardScene } from './scenes/YardScene';
 
 export function createGame(parent: HTMLElement, session: GameSession): Phaser.Game {
@@ -16,6 +17,7 @@ export function createGame(parent: HTMLElement, session: GameSession): Phaser.Ga
     },
     input: { activePointers: 3 },
     banner: false,
-    scene: [new YardScene(session)],
+    // The Vet Clinic starts only when opened; the yard sleeps meanwhile.
+    scene: [new YardScene(session), new VetScene(session)],
   });
 }

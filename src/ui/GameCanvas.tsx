@@ -33,6 +33,18 @@ export function GameCanvas() {
         remeasure();
         host.setAttribute('data-world-ready', 'true');
       }),
+      // Vet Clinic: the yard sleeps (keeps its sprites, ignores taps) while the clinic shows.
+      appBus.on('openVet', ({ animalId }) => {
+        game.scene.stop('Vet');
+        game.scene.sleep('Yard');
+        game.scene.start('Vet', { animalId });
+      }),
+      appBus.on('closeVet', () => {
+        game.scene.stop('Vet');
+        game.scene.wake('Yard');
+        appBus.emit('sceneChanged', { scene: 'yard' });
+      }),
+      appBus.on('sceneChanged', ({ scene }) => host.setAttribute('data-scene', scene)),
     ];
     return () => {
       for (const type of pressEvents)
@@ -44,6 +56,12 @@ export function GameCanvas() {
   }, [session]);
 
   return (
-    <div ref={hostRef} className={styles.host} data-testid="game-canvas" data-canvas-taps="0" />
+    <div
+      ref={hostRef}
+      className={styles.host}
+      data-testid="game-canvas"
+      data-canvas-taps="0"
+      data-scene="yard"
+    />
   );
 }
