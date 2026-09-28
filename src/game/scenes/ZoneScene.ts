@@ -18,6 +18,7 @@ import {
 import { AnimalSprite } from '../sprites/AnimalSprite';
 import { BowlSprite } from '../sprites/BowlSprite';
 import { ItemSprite } from '../sprites/ItemSprite';
+import { PlayerAvatar } from '../sprites/PlayerAvatar';
 import { PoopSprite } from '../sprites/PoopSprite';
 
 /** Decorate mode's camera: the room shrinks toward the top, leaving room for the tray. */
@@ -78,6 +79,7 @@ export abstract class ZoneScene extends Phaser.Scene {
   private selectedPlacedId: string | null = null;
   private itemDrag: ItemDrag | null = null;
   private gridLayer!: Phaser.GameObjects.Graphics;
+  private avatar!: PlayerAvatar;
   private ghost!: Phaser.GameObjects.Graphics;
 
   protected constructor(
@@ -98,6 +100,17 @@ export abstract class ZoneScene extends Phaser.Scene {
     this.drawBackground();
     this.gridLayer = this.add.graphics().setDepth(-400).setVisible(false);
     this.ghost = this.add.graphics().setDepth(20_000);
+    // The player's avatar starts by this zone's door.
+    const door = doorOf(this.zone);
+    const walkable = gridArea(this.zone);
+    this.avatar = new PlayerAvatar(
+      this,
+      door.x + 90,
+      Phaser.Math.Clamp(door.y + 30, walkable.y + 40, walkable.y + walkable.h),
+      walkable,
+      this.reducedMotion,
+    );
+    this.avatar.setLoadout(this.session.profile.avatar);
 
     this.input.on(
       Phaser.Input.Events.POINTER_DOWN,
@@ -109,6 +122,7 @@ export abstract class ZoneScene extends Phaser.Scene {
           if (!onItem) this.decorTapEmpty({ x: pointer.worldX, y: pointer.worldY });
           return;
         }
+        this.avatar.walkToward({ x: pointer.worldX, y: pointer.worldY });
         if (over.length === 0) {
           this.fx.ripple(pointer.worldX, pointer.worldY);
           appBus.emit('selectAnimal', { id: null });
@@ -162,6 +176,9 @@ export abstract class ZoneScene extends Phaser.Scene {
         if (b) this.fx.burst(b.x, b.y - 10, [0xe0a868, 0xffd84d, 0xffffff], 8);
       }),
       appBus.on('selectAnimal', ({ id }) => this.select(id)),
+      this.session.events.on('profileChanged', ({ profile }) =>
+        this.avatar.setLoadout(profile.avatar),
+      ),
       appBus.on('decorate', ({ on }) => this.setDecorating(on)),
       appBus.on('decorPick', ({ itemId }) => {
         this.pickItemId = itemId;
@@ -457,6 +474,7 @@ export abstract class ZoneScene extends Phaser.Scene {
     this.ghost.clear();
     this.drawGrid();
     this.gridLayer.setVisible(on);
+    this.avatar.setVisible(!on);
     // Zoom out a little so the whole room fits above the Decorate tray.
     const cam = this.cameras.main;
     const zoom = on ? DECORATE_ZOOM : 1;

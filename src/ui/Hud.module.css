@@ -113,3 +113,38 @@
   font-size: 16px;
   font-variant-numeric: tabular-nums;
 }
+
+/* The avatar's face in a circle: opens My style (Wardrobe and Boutique). */
+.me {
+  position: relative;
+  width: var(--touch-min);
+  height: var(--touch-min);
+  flex: none;
+  padding: 0;
+  overflow: hidden;
+  border: 3px solid var(--color-panel-border);
+  border-radius: 50%;
+  background: #d9f1ea;
+  box-shadow: var(--shadow-soft);
+  cursor: pointer;
+}
+
+.meFace {
+  position: absolute;
+  left: 50%;
+  top: -8px;
+  transform: translateX(-50%);
+}
+
+.gear {
+  position: absolute;
+  right: calc(12px + var(--safe-right));
+  bottom: calc(44px + var(--safe-bottom));
+  width: 56px;
+  height: 56px;
+  font-size: 26px;
+}
+
+.gear[hidden] {
+  display: none;
+}

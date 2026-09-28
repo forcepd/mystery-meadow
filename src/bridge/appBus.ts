@@ -25,7 +25,10 @@ export type AppEvents = {
    * Opens a full-screen overlay (null closes it). `incomingId`: an animal being kept while
    * every Pet Slot is full, so the Pets (Swap) screen asks where it goes.
    */
-  openScreen: { screen: 'pets' | 'dex' | 'store' | 'realEstate' | null; incomingId?: string };
+  openScreen: {
+    screen: 'pets' | 'dex' | 'store' | 'realEstate' | 'style' | 'settings' | null;
+    incomingId?: string;
+  };
   /** Which Phaser scene is showing. */
   sceneChanged: { scene: 'yard' | 'house' | 'vet' };
   /** Switch the world view between the yard and the house (DESIGN 17.2 toggle). */

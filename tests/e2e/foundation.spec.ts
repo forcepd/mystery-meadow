@@ -3,6 +3,7 @@ import {
   animalTapPoint,
   buildSave,
   canvasReady,
+  openGame,
   press,
   seedSave,
   tapWorld,
@@ -11,8 +12,7 @@ import {
 
 test.describe('foundation', () => {
   test('loads the world canvas with the HUD layered on top', async ({ page }) => {
-    await page.goto('./');
-    await canvasReady(page);
+    await openGame(page);
     await expect(page.getByLabel('100 coins')).toBeVisible();
     await expect(page.getByLabel('50 gems')).toBeVisible();
     await expect(page.getByTestId('rotate-screen')).toBeHidden();
@@ -40,8 +40,7 @@ test.describe('foundation', () => {
   });
 
   test('interactive elements meet the 48x48 touch target minimum', async ({ page }) => {
-    await page.goto('./');
-    await canvasReady(page);
+    await openGame(page);
     const targets = page.locator('button, a');
     const count = await targets.count();
     expect(count).toBeGreaterThan(0);
@@ -62,8 +61,7 @@ test.describe('foundation', () => {
   });
 
   test('has the iPad viewport and touch settings', async ({ page }) => {
-    await page.goto('./');
-    await canvasReady(page);
+    await openGame(page);
     await expect(page.locator('meta[name="viewport"]')).toHaveAttribute(
       'content',
       'width=device-width, initial-scale=1, viewport-fit=cover',
@@ -81,16 +79,14 @@ test.describe('foundation', () => {
       const url = new URL(req.url());
       if (url.protocol.startsWith('http') && url.origin !== origin) external.push(req.url());
     });
-    await page.goto('./');
-    await canvasReady(page);
+    await openGame(page);
     await page.goto('./privacy.html');
     await page.waitForLoadState('networkidle');
     expect(external).toEqual([]);
   });
 
   test('uses the self-hosted font', async ({ page }) => {
-    await page.goto('./');
-    await canvasReady(page);
+    await openGame(page);
     await page.evaluate(() => document.fonts.ready);
     expect(await page.evaluate(() => document.fonts.check('800 20px Nunito'))).toBe(true);
   });
@@ -118,8 +114,7 @@ test.describe('foundation', () => {
   });
 
   test('has a privacy page linked from the game', async ({ page }) => {
-    await page.goto('./');
-    await canvasReady(page);
+    await openGame(page);
     await press(page, page.getByRole('link', { name: 'Privacy' }));
     await expect(page).toHaveURL(/privacy\.html$/);
     await expect(

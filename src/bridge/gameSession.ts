@@ -44,7 +44,7 @@ export interface SessionOptions {
    * A brand new player from onboarding: their profile, house color, and whether the tutorial
    * runs (the first visitor comes right away either way).
    */
-  create?: { profile: Profile; houseColor: string };
+  create?: { profile: Profile; houseColor: string; tutorial?: boolean };
 }
 
 /**
@@ -143,7 +143,7 @@ export class GameSession {
     const sim = GameSim.newGame({
       clock,
       seed,
-      ...(create ? { houseColor: create.houseColor, tutorial: true } : {}),
+      ...(create ? { houseColor: create.houseColor, tutorial: create.tutorial ?? true } : {}),
     });
     const profile = create?.profile ?? { ...DEFAULT_PROFILE, id: profileId };
     const session = new GameSession(sim, clock, structuredClone(profile), [], saves, true);
@@ -188,6 +188,11 @@ export class GameSession {
   /** Switching players: one last save, then nothing more. */
   async stop(): Promise<void> {
     await this.save();
+    this.stopped = true;
+  }
+
+  /** Stops without saving (e.g. an imported backup is about to replace this save). */
+  abandon(): void {
     this.stopped = true;
   }
 

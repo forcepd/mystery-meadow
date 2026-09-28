@@ -9,7 +9,9 @@ import { HomeStore } from './HomeStore';
 import { Hud } from './Hud';
 import { PetsScreen } from './PetsScreen';
 import { RealEstate } from './RealEstate';
-import { RotateScreen } from './RotateScreen';
+import { SettingsScreen } from './SettingsScreen';
+import { StyleScreen } from './StyleScreen';
+import { TutorialCoach } from './TutorialCoach';
 import { SessionProvider } from './session';
 import { Toasts } from './Toasts';
 import { VetClinic } from './VetClinic';
@@ -30,13 +32,15 @@ export function App({ session }: { session: GameSession }) {
         <DecorateBar />
         <HomeStore />
         <RealEstate />
+        <StyleScreen />
+        <SettingsScreen />
+        <TutorialCoach />
         <Toasts />
         {DebugPanel && (
           <Suspense fallback={null}>
             <DebugPanel />
           </Suspense>
         )}
-        <RotateScreen />
       </div>
     </SessionProvider>
   );

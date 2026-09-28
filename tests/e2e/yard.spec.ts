@@ -3,6 +3,7 @@ import {
   animalTapPoint,
   buildSave,
   canvasReady,
+  openGame,
   gateTapPoint,
   press,
   seedSave,
@@ -18,8 +19,7 @@ test.beforeEach(async ({ page }) => {
 
 test.describe('first playable yard', () => {
   test('a new game starts with the HUD and a visitor countdown', async ({ page }) => {
-    await page.goto('./');
-    await canvasReady(page);
+    await openGame(page);
     await expect(page.getByTestId('coins')).toHaveText('100');
     await expect(page.getByTestId('gems')).toHaveText('50');
     await expect(page.getByTestId('capacity')).toHaveText('🐾0/6');
@@ -124,8 +124,7 @@ test.describe('first playable yard', () => {
   });
 
   test('the dev Debug Panel is not in the production build', async ({ page }) => {
-    await page.goto('./');
-    await canvasReady(page);
+    await openGame(page);
     await expect(page.getByRole('button', { name: /debug/i })).toHaveCount(0);
   });
 });

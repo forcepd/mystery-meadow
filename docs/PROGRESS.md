@@ -712,3 +712,104 @@ DESIGN 15.1 calls the Manor "a multi-week goal". The bot is perfect: it taps eve
 
 - House exteriors and Scoop Bot are placeholder art until Phase 10.
 - House interiors don't change look per tier beyond the bigger grid (smaller tiles).
+
+## Phase 8: Profiles, Onboarding, Avatar, Gems, Parent Mode (built 2026-09-28)
+
+### What was built
+
+**Content and pure logic**
+
+- **`src/config/avatarItems.ts`:** every DESIGN 13.3 slot (body shape, skin tone, eyes, brows, mouth, hairstyle, hair color, blush, eyeshadow, lips, face paint, top, bottom, one-piece, shoes, hat, glasses, bag, earrings). 94 items: a small free starter set (3–4 per clothing and face category) and Boutique items at 10–80 gems. **Body shapes and all 8 skin tones are always free.**
+- **`src/profile/`** (no DOM, unit-tested):
+  - Avatar loadouts: equip and unequip, a one-piece replacing the top and bottom and back again, one item per accessory slot, and checking ownership.
+  - Usernames: 3–16 letters, numbers, or `_`, through the word filter, and unique on the device regardless of case.
+  - The Parent PIN, salted and hashed. **This is a speed bump, not real security:** everything lives on the kid's device.
+  - `numberInWords` for the forgot-PIN check, and the activity log (the last 50 events, newest first).
+- **`src/art/avatarSvg.ts`:** a layered, parametric placeholder avatar as a pure SVG string. The same renderer drives the Creator and the world.
+
+**Sim**
+
+- `spendGems`, `grantGems` (1–500 per grant), and `updateSettings`.
+- `newGame({ houseColor, tutorial })`: a tutorial game sends its first visitor right away and starts with an empty bowl.
+- `tutorialNudge`: the first visitor gets a little hungry and poops within 20 s.
+
+**Saves**
+
+- **Save v5:** the profile gets its avatar, owned Boutique items, 3 favorite-outfit slots, and a tutorial step, and the save gets an activity log. The migration gives existing players the starter outfit and marks their tutorial done.
+- **Device record** (`device` key, never exported): the profile list and the Parent PIN. An install from before profiles is adopted automatically, and a PIN is asked for once.
+- **Backups (`save/backup.ts`):** a JSON file of every profile's save, with no PIN. Importing runs every save through the migrations and rejects anything else.
+
+**App and screens**
+
+- **`Root`** runs the whole app: first-run PIN setup → profile picker → onboarding → the game. Game sessions start from a tap, never from an effect, so StrictMode is safe. The rotate screen now covers every screen.
+- **First run:** "Hi, grown-up!" sets the Parent PIN (typed twice).
+- **Profile picker:** avatar cards, most recently played first, plus ➕ New player.
+- **Onboarding** (DESIGN 5):
+  - A nickname ("not your real name").
+  - The Avatar Creator with starter items and 🔒 Boutique teasers ("More styles in the Boutique!").
+  - The house color on a live cottage preview.
+- **Tutorial** (a coach bubble that follows real play):
+  1. Tap the visitor.
+  2. Fill the empty bowl so it eats.
+  3. Clean its poop.
+  4. Open its card to see the 20-minute countdown.
+  5. "Great job!"
+
+  Skippable (your choice), and the step is saved so a reload resumes.
+- **HUD:** the avatar's face (top-left) opens **My Style**; ⚙️ (bottom-right) opens **Settings**.
+- **My Style:**
+  - **Wardrobe:** owned items only, free changes, 3 favorite outfits.
+  - **Boutique:** everything with gem prices, a live try-on, and "Buy X 💎30".
+  - **💎 Get Gems:** "Ask a grown-up!" with the PIN, then gem packs.
+- **Settings:** less motion, 👥 Switch player, and 🔒 Parent Mode (PIN). "Forgot PIN?" asks the grown-up to type a number written in words (e.g. "forty-seven thousand and six"), then set a new PIN (your choice). Saves are kept.
+- **Parent Mode:**
+  - Gems: 10 / 50 / 100 or a custom amount (your choice).
+  - Recent activity.
+  - Game settings: offline progress, sickness on/off, and the daily trick-gem cap (used in Phase 9).
+  - Players: rename, 🌱 reset (start their meadow over, keeping their name and look), and delete (not the one playing).
+  - 💾 Backups: save a file, and load one (replacing same-id players, after confirming).
+  - Change the PIN.
+- **World:** the player's avatar stands in the yard and the house and walks toward wherever the kid taps (flavor only, never in the way of taps). It's hidden while decorating.
+
+**Tests**
+
+- **Unit:** 413 in total (55 new).
+  - The avatar catalog rules, and the renderer drawing every item without errors.
+  - Loadout rules, usernames, the PIN hash, number words, and the activity log cap.
+  - The device record adopting an old install, backup round-trips and rejections, and the v4 → v5 migration.
+  - Gems (spend and grant limits), settings, the tutorial new game and nudge.
+  - The session: create, Boutique purchases, outfits, the tutorial step surviving a reload, activity saved, and nothing saved after stop.
+- **E2E:** 36 new runs (12 tests × 3 browser setups).
+  - **The "Done when":** a brand-new device goes through PIN → nickname (including a refusal) → avatar → color → the whole tutorial → **its first sale**, entirely through the real UI. Playwright's clock skips the poop wait and the 20-minute hold.
+  - A second player, a duplicate-name refusal, skipping the tutorial, and switching players.
+  - An old install keeping its coins.
+  - Boutique buy and try-on.
+  - Wardrobe and favorites.
+  - Get Gems (wrong PIN, then the right one).
+  - Forgot PIN.
+  - Parent Mode: gems, activity, and settings surviving a reload; renaming; saving a backup, editing it, and loading it back; a non-backup file refused.
+  - All onboarding screens pass the 48 px touch-target check.
+- The old e2e tests now seed a device record (PIN `1234`) and tap their profile in the picker.
+
+### Phase 8 "Done when"
+
+A brand-new player goes from first launch to their first sale entirely through the real UI. The e2e test above does exactly that on desktop Chromium, iPad mini, and iPad Pro.
+
+### Defaults chosen (spec left open): please confirm or change
+
+1. **Forgot PIN:** a grown-up check (your answer). Type a number written in words, then set a new PIN; saves are kept.
+2. **The tutorial can be skipped** (your answer).
+3. **Gem packs:** 10 / 50 / 100 + custom 1–500 (your answer).
+4. **Tutorial "feed it":** the first visitor arrives a bit hungry next to an *empty* bowl, so the kid fills it. The spec just says "feeds it"; a treat would have been refused because a new animal is full.
+5. **Body shape and skin tone are never sold.**
+6. **Usernames are unique per device**, ignoring case, so the picker never shows two the same.
+7. **Resetting a player** keeps their name, avatar, and Boutique items, and starts a fresh meadow without the tutorial.
+8. **The Parent PIN is asked once on a device** that already had a save from before profiles.
+9. **Importing a backup** replaces players with the same id and adds the others. It never includes or changes the PIN.
+
+### Known issues
+
+- The avatar is placeholder art until Phase 10. Its world texture is rasterized through a canvas, because WebKit drew SVG textures at the wrong size.
+- The PIN keeps kids out casually but isn't cryptographically strong (see above). Clearing site data resets everything.
+- The first tutorial visitor can be pregnant; its babies then sit next to it. That's fine for play, but the e2e test tries each animal for the sale because of it.
+- Real-device check still pending: the on-screen keyboard during onboarding and renaming on iPad, and downloading and loading backups in iPad Safari (Files app).

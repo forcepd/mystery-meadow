@@ -1,17 +1,18 @@
 import { useCallback, useState } from 'react';
 import { appBus } from '../bridge/appBus';
 import { formatCountdown } from '../bridge/describe';
+import { AvatarView } from './AvatarView';
 import common from './common.module.css';
 import styles from './Hud.module.css';
 import { useSim } from './session';
 import { useAppEvent } from './useAppEvent';
 
 /**
- * DESIGN 17.2 HUD (through Phase 7): coins, gems, Pet Slots, capacity, visitors, and the menu:
- * Yard/House toggle, Pets, Dex, Home Store, Real Estate, Decorate.
+ * DESIGN 17.2 HUD (through Phase 8): the avatar (My style), coins, gems, Pet Slots, capacity,
+ * visitors, Settings, and the menu: Yard/House, Pets, Dex, Home Store, Real Estate, Decorate.
  */
 export function Hud() {
-  const { sim } = useSim();
+  const { sim, profile } = useSim();
   const [zone, setZone] = useState<'yard' | 'house'>('yard');
   const [decorating, setDecorating] = useState(false);
   useAppEvent(
@@ -40,6 +41,14 @@ export function Hud() {
   return (
     <div className={styles.overlay}>
       <div className={styles.topLeft}>
+        <button
+          type="button"
+          className={styles.me}
+          aria-label={`${profile.username}: my style`}
+          onClick={() => appBus.emit('openScreen', { screen: 'style' })}
+        >
+          <AvatarView loadout={profile.avatar} height={120} className={styles.meFace} />
+        </button>
         <div className={common.pill} aria-label={`${coins} coins`} data-testid="coins">
           <span className={`${styles.icon} ${styles.coin}`} aria-hidden="true" />
           {coins}
@@ -147,6 +156,16 @@ export function Hud() {
           {count}/{capacity}
         </div>
       </div>
+
+      <button
+        type="button"
+        className={`${common.iconButton} ${styles.gear}`}
+        aria-label="Settings"
+        hidden={decorating}
+        onClick={() => appBus.emit('openScreen', { screen: 'settings' })}
+      >
+        ⚙️
+      </button>
 
       <a className={`${common.link} ${styles.privacy}`} href="./privacy.html">
         Privacy

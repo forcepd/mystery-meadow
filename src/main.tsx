@@ -4,12 +4,9 @@ import '@fontsource/nunito/latin-800.css';
 import './styles/global.css';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { GameSession } from './bridge/gameSession';
-import { runSession } from './bridge/runSession';
 import { createIdbStore } from './save/idbStore';
-import { App } from './ui/App';
+import { Root } from './ui/root/Root';
 import { preventZoomGestures } from './ui/preventZoom';
-import { StartupScreen } from './ui/StartupScreen';
 
 preventZoomGestures();
 
@@ -19,21 +16,11 @@ if (import.meta.env.PROD) {
 
 const rootEl = document.getElementById('root');
 if (!rootEl) throw new Error('Missing #root element');
-const root = createRoot(rootEl);
-root.render(<StartupScreen />);
 
-// The session lives outside React so StrictMode's double effects can't start two games.
-GameSession.start({ store: createIdbStore() }).then(
-  (session) => {
-    runSession(session);
-    root.render(
-      <StrictMode>
-        <App session={session} />
-      </StrictMode>,
-    );
-  },
-  (error: unknown) => {
-    console.error('Could not start the game', error);
-    root.render(<StartupScreen error />);
-  },
+// Game sessions start from a tap in the profile picker (never from an effect), so
+// StrictMode's double effects can't start two games.
+createRoot(rootEl).render(
+  <StrictMode>
+    <Root store={createIdbStore()} />
+  </StrictMode>,
 );

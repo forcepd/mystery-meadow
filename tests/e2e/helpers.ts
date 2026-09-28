@@ -1,7 +1,9 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 import { gateSlot, tileToWorld, yardToWorld, WORLD_WIDTH } from '../../src/game/layout';
 import { DEFAULT_PROFILE } from '../../src/bridge/gameSession';
-import { toSaveFile } from '../../src/save/schema';
+import { makePin } from '../../src/profile/pin';
+import type { DeviceRecord } from '../../src/save/device';
+import { toSaveFile, type SaveFile } from '../../src/save/schema';
 import { FakeClock } from '../../src/sim/clock';
 import { GameSim } from '../../src/sim/GameSim';
 import type { Animal, SimState, Visitor } from '../../src/sim/types';
@@ -20,8 +22,13 @@ export async function press(
   await target.click(options);
 }
 
+/** Waits for the world. Taps the profile first if the profile picker is showing. */
 export async function canvasReady(page: Page) {
-  await expect(page.locator('[data-testid="game-canvas"] canvas')).toBeVisible();
+  const canvas = page.locator('[data-testid="game-canvas"] canvas');
+  const firstProfile = page.getByRole('button', { name: /^Play as / }).first();
+  await expect(canvas.or(firstProfile)).toBeVisible();
+  if (await firstProfile.isVisible()) await press(page, firstProfile);
+  await expect(canvas).toBeVisible();
   // Give Phaser a moment to boot its input system.
   await page.waitForFunction(() => {
     const c = document.querySelector('[data-testid="game-canvas"] canvas') as HTMLCanvasElement;
@@ -124,21 +131,39 @@ export function testVisitor(now: number, overrides: Partial<Visitor> = {}): Visi
   };
 }
 
+/** The Parent PIN every seeded device uses. */
+export const TEST_PIN = '1234';
+
 /**
- * Writes a save into IndexedDB (the same database idb-keyval uses) before the game loads.
- * Visits the privacy page first: same origin, but it doesn't start a game.
+ * Writes a save into IndexedDB (the same database idb-keyval uses) before the game loads,
+ * plus a device record listing that profile with the Parent PIN set to TEST_PIN (so the
+ * first-run PIN setup is skipped). Visits the privacy page first: same origin, but it doesn't
+ * start a game. Pass `device: false` to write only the save (an install from before profiles).
  */
-export async function seedSave(page: Page, save: unknown) {
+export async function seedSave(page: Page, save: SaveFile, options: { device?: boolean } = {}) {
+  const device: DeviceRecord = {
+    version: 1,
+    profiles: [
+      {
+        id: save.profile.id,
+        username: save.profile.username,
+        avatar: save.profile.avatar,
+        lastPlayedAt: save.meta.lastSeenAt,
+      },
+    ],
+    pin: makePin(TEST_PIN, 'test-salt'),
+  };
   await page.goto('./privacy.html');
   await page.evaluate(
-    (file) =>
+    ({ file, device }) =>
       new Promise<void>((resolve, reject) => {
         const open = indexedDB.open('mystery-meadow');
         open.onupgradeneeded = () => open.result.createObjectStore('saves');
         open.onerror = () => reject(open.error);
         open.onsuccess = () => {
           const tx = open.result.transaction('saves', 'readwrite');
-          tx.objectStore('saves').put(file, 'profile:default');
+          tx.objectStore('saves').put(file, `profile:${file.profile.id}`);
+          if (device) tx.objectStore('saves').put(device, 'device');
           tx.oncomplete = () => {
             open.result.close();
             resolve();
@@ -146,6 +171,16 @@ export async function seedSave(page: Page, save: unknown) {
           tx.onerror = () => reject(tx.error);
         };
       }),
-    save,
+    { file: save, device: options.device === false ? null : device },
   );
+}
+
+/** Opens the game with a brand new default save (no onboarding). */
+export async function openGame(page: Page) {
+  await seedSave(
+    page,
+    buildSave(() => {}),
+  );
+  await page.goto('./');
+  await canvasReady(page);
 }
