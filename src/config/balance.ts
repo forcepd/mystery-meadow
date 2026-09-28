@@ -1,0 +1,90 @@
+import { deepFreeze } from './deepFreeze';
+
+/**
+ * Every gameplay number lives here (DESIGN.md Section 15). Never hardcode tunables elsewhere.
+ * Durations are in the unit named by the key (Minutes / Seconds / Hours).
+ */
+// prettier-ignore
+export const BALANCE = deepFreeze({
+  startingCoins: 100,
+  startingGems: 50,
+
+  houseTiers: [
+    { id: 'cottage',   name: 'Cozy Cottage',   cost: 0,     visitorMinutes: 10, baseCapacity: 6,  interiorGrid: [8, 6],   lureSlots: 3,  maxRoomExpansions: 2, baseLure: 0 },
+    { id: 'bungalow',  name: 'Sunny Bungalow', cost: 1500,  visitorMinutes: 8,  baseCapacity: 9,  interiorGrid: [10, 7],  lureSlots: 5,  maxRoomExpansions: 3, baseLure: 10 },
+    { id: 'farmhouse', name: 'Big Farmhouse',  cost: 5000,  visitorMinutes: 7,  baseCapacity: 12, interiorGrid: [12, 8],  lureSlots: 7,  maxRoomExpansions: 4, baseLure: 20 },
+    { id: 'manor',     name: 'Grand Manor',    cost: 15000, visitorMinutes: 6,  baseCapacity: 16, interiorGrid: [14, 10], lureSlots: 10, maxRoomExpansions: 5, baseLure: 30 },
+  ],
+  roomExpansionCosts: [250, 400, 600, 900, 1300],
+  petSlots: { starting: 2, costs: [300, 600, 1000, 1500, 2000, 2500] },
+  petStorage: { starting: 20, perExpansion: 10, expansionCosts: [200, 400, 800] },
+
+  visitor: { gateWaitMinutes: 5, autoRevealSeconds: 60 },
+
+  rarity: {
+    baseWeights: { common: 60, uncommon: 25, rare: 10, epic: 4, legendary: 1 },
+    lureBoost:   { common: -0.01, uncommon: 0.01, rare: 0.02, epic: 0.03, legendary: 0.04 },
+    floorFactor: { common: 0.3, uncommon: 1, rare: 1, epic: 1, legendary: 1 },
+    maxLure: 100,
+    basePrice:   { common: 20, uncommon: 45, rare: 100, epic: 250, legendary: 600 },
+    sparkleChance: 0.02,
+    sparkleMultiplier: 3,
+  },
+
+  pregnancy: {
+    chance: 0.30,
+    gestationMinutes: 3,
+    litterWeights: { 1: 30, 2: 30, 3: 20, 4: 12, 5: 8 },
+    babyKeepsMotherColor: 0.7,
+    sparkleInheritChance: 0.25,
+  },
+
+  holdMinutes: 20,
+  babyGrowMinutes: 20,
+
+  needs: {
+    hungerDrainMinutes: 30,
+    happinessDrainMinutes: 40,
+    bowlServings: 5,
+    hungryThreshold: 50,
+    petHappinessGain: 15,
+    petCooldownSeconds: 20,
+    crowdedHappinessDrainMultiplier: 1.5,
+  },
+
+  poop: { minMinutes: 8, maxMinutes: 14 },
+
+  sickness: {
+    baseChancePerMinute: 0.002,
+    lowHungerMultiplier: 2,
+    poopThreshold: 3,
+    poopMultiplier: 2,
+    lowHappinessMultiplier: 1.5,
+    contagionPerSickPerMinute: 0.01,
+    immunityMinutes: 30,
+    sickHappinessDrainMultiplier: 2,
+  },
+
+  vet: { visitFee: 20, treatmentCost: 10, freeClinicWaitMinutes: 3 },
+
+  care: { minMultiplier: 0.8, maxMultiplier: 1.3, windowMinutes: 10 },
+
+  tricks: {
+    sessionsToLearn: 3,
+    cooldownMinutes: 5,
+    gemsPerNewTrick: 5,
+    salePriceBonusPerTrick: 0.10,
+    maxByRarity: { common: 2, uncommon: 3, rare: 4, epic: 5, legendary: 6 },
+    dailyGemCap: 40,
+  },
+
+  wander: { minSeconds: 60, maxSeconds: 120 },
+
+  offline: { maxCatchUpHours: 8, maxGateQueue: 3 },
+
+  houseColorChangeCost: 50,
+} as const);
+
+export type Balance = typeof BALANCE;
+export type HouseTier = Balance['houseTiers'][number];
+export type HouseTierId = HouseTier['id'];
