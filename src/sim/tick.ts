@@ -1,6 +1,7 @@
 import { BALANCE } from '../config/balance';
 import { emptySummary, hours, seconds, type SimContext } from './context';
 import { tickFeeding } from './systems/feeding';
+import { tickHelpers } from './systems/helpers';
 import { tickLifecycle } from './systems/lifecycle';
 import { tickCareSamples, tickNeeds } from './systems/needs';
 import { tickPoop } from './systems/poop';
@@ -22,6 +23,7 @@ export function runTick(ctx: SimContext, t: Ms): void {
   tickNeeds(ctx, t - prev);
   tickFeeding(ctx);
   tickPoop(ctx, t);
+  tickHelpers(ctx, t);
   tickClinic(ctx, t);
   tickSickness(ctx, t);
   tickCareSamples(ctx, t);

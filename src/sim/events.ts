@@ -23,11 +23,12 @@ export type SimEvents = {
   dexDiscovered: { key: string };
   animalAte: { animal: Animal; bowlId: string };
   bowlEmptied: { bowlId: string };
-  bowlRefilled: { bowlId: string };
+  /** `by` a helper, or the player tapping the bowl. */
+  bowlRefilled: { bowlId: string; by?: 'autoFeeder' };
   treatGiven: { animal: Animal };
   animalPetted: { animal: Animal };
   poopAppeared: { poop: Poop; animalId: string };
-  poopCleaned: { poop: Poop };
+  poopCleaned: { poop: Poop; by?: 'scoopBot' };
   animalRenamed: { animal: Animal };
   animalSick: { animal: Animal; illnessId: string };
   /** Checked in at the vet (`free` = Free Clinic, which starts with a wait). */
@@ -57,6 +58,10 @@ export type SimEvents = {
   itemMoved: { item: PlacedItem };
   itemStored: { item: PlacedItem };
   surfaceApplied: { itemId: string };
+  /** Moved up to the next house tier (DESIGN 12.1). */
+  houseUpgraded: { tierId: string };
+  /** A Real Estate purchase other than a house upgrade. */
+  realEstateBought: { kind: 'room' | 'petSlot' | 'storage' | 'color' };
   caughtUp: OfflineSummary;
   /** Something in the state may have changed (a tick ran or a command was called). */
   changed: undefined;

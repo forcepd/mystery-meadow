@@ -59,6 +59,9 @@ export class GameSession {
       'itemMoved',
       'itemStored',
       'surfaceApplied',
+      // Real Estate.
+      'houseUpgraded',
+      'realEstateBought',
     ] as const) {
       sim.events.on(event, () => void this.save());
     }

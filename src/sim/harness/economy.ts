@@ -26,6 +26,11 @@ export interface EconomyOptions {
   botIntervalSeconds?: number;
   /** Chance the bot tries one wrong treatment before the right one. Default 0.25. */
   wrongGuessChance?: number;
+  /**
+   * Spend on progression: buy the next house tier as soon as coins cover it plus a small vet
+   * reserve. Off by default (the bot then never spends, for clean earnings numbers).
+   */
+  spend?: boolean;
 }
 
 export interface EconomyReport {
@@ -46,6 +51,8 @@ export interface EconomyReport {
   coinsPerHour: number;
   /** Hours until total earnings reached each house tier's cost (null = not reached). */
   hoursToAfford: Record<string, number | null>;
+  /** With `spend`: hours until the bot moved into each house tier (null = not reached). */
+  hoursToReach: Record<string, number | null>;
   minutesCrowded: number;
   finalAnimals: number;
   /** DESIGN 22: sickness frequency. */
@@ -69,6 +76,10 @@ export function runEconomy(options: EconomyOptions): EconomyReport {
   const sold = Object.fromEntries(RARITIES.map((r) => [r, 0])) as Record<Rarity, number>;
   const hoursToAfford: Record<string, number | null> = {};
   for (const tier of BALANCE.houseTiers.slice(1)) hoursToAfford[tier.id] = null;
+  const hoursToReach: Record<string, number | null> = { ...hoursToAfford };
+  sim.events.on('houseUpgraded', ({ tierId }) => {
+    hoursToReach[tierId] = (sim.now() - start) / hours(1);
+  });
   const guessRng = new Rng(options.seed ^ 0x5eed);
   const wrongGuessChance = options.wrongGuessChance ?? 0.25;
   const report = {
@@ -128,6 +139,10 @@ export function runEconomy(options: EconomyOptions): EconomyReport {
     for (const animal of [...sim.state.world.animals]) {
       if (animal.sickness) visitVet(sim, animal.id, guessRng, wrongGuessChance);
     }
+    if (options.spend) {
+      const next = sim.realEstate().next;
+      if (next && sim.state.world.coins >= next.cost + SPEND_RESERVE) sim.upgradeHouse();
+    }
     for (const animal of [...sim.state.world.animals]) {
       if (!sim.canSell(animal.id).ok) continue;
       careSum += sim.careMultiplier(animal.id) ?? 1;
@@ -146,6 +161,7 @@ export function runEconomy(options: EconomyOptions): EconomyReport {
     sold,
     coinsPerHour: Math.round(report.coinsEarned / options.hours),
     hoursToAfford,
+    hoursToReach,
     minutesCrowded: Math.round(crowdedMs / minutes(1)),
     finalAnimals: sim.animalCount(),
     sickPerHour: Math.round((report.sickCases / options.hours) * 10) / 10,
@@ -153,6 +169,9 @@ export function runEconomy(options: EconomyOptions): EconomyReport {
 }
 
 /** Checks in, then treats: the right treatment, maybe after one wrong guess. */
+/** Coins the spending bot keeps back for vet visits. */
+const SPEND_RESERVE = 50;
+
 function visitVet(sim: GameSim, animalId: string, rng: Rng, wrongGuessChance: number): void {
   if (!sim.goToVet(animalId).ok || sim.isWaitingAtClinic(animalId)) return;
   const illness = getIllness(sim.getAnimal(animalId)?.sickness?.illnessId ?? '');
@@ -178,6 +197,13 @@ export function formatEconomyReport(r: EconomyReport, runtimeMs?: number): strin
       `${r.sparklesSold} Sparkle`,
     `  Coins earned: ${r.coinsEarned} (${r.coinsPerHour}/hour), average care x${r.avgCareMultiplier}`,
     `  Earnings reach: ${afford}`,
+    ...(Object.values(r.hoursToReach).some((h) => h !== null)
+      ? [
+          `  Moved into: ${Object.entries(r.hoursToReach)
+            .map(([id, h]) => `${id} ${h === null ? 'not reached' : `${h.toFixed(1)} h`}`)
+            .join(', ')}`,
+        ]
+      : []),
     `  Time crowded: ${r.minutesCrowded} min; animals at end: ${r.finalAnimals}`,
     `  Sickness: ${r.sickCases} cases (${r.sickPerHour}/hour), ${r.freeClinicVisits} Free Clinic, ` +
       `${r.vetCoinsSpent} coins at the vet`,

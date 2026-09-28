@@ -127,6 +127,10 @@ export const BALANCE = deepFreeze({
   save: { autosaveSeconds: 15 },
 
   houseColorChangeCost: 50,
+
+  // Helpers (items.ts has their prices). [DEFAULT, Phase 7] Once a minute, online only: Scoop
+  // Bot cleans the oldest yard poop (DESIGN 8.3), and Auto-Feeder refills every empty bowl.
+  helpers: { scoopEverySeconds: 60, feedEverySeconds: 60 },
 } as const);
 
 export type Balance = typeof BALANCE;

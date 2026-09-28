@@ -74,8 +74,15 @@ export interface SurfaceItemDef extends BaseItemDef {
   readonly starter?: true;
 }
 
+/** Helper (DESIGN 8.3, 13.1): bought once, works on its own. Behavior in balance.helpers. */
+export interface HelperItemDef extends BaseItemDef {
+  readonly category: 'helper';
+  readonly helper: 'scoopBot' | 'autoFeeder';
+  readonly description: string;
+}
+
 export type PlaceableItemDef = LureItemDef | BowlItemDef | FurnitureItemDef | BedItemDef;
-export type ItemDef = PlaceableItemDef | SurfaceItemDef;
+export type ItemDef = PlaceableItemDef | SurfaceItemDef | HelperItemDef;
 
 const one: Footprint = { w: 1, h: 1 };
 
@@ -214,6 +221,12 @@ export const ITEMS: readonly ItemDef[] = deepFreeze([
   surface('flooring_wood',     'Honey Wood',      'flooring',  0,   0, '#e3c08f', true),
   surface('flooring_checker',  'Checker Tiles',   'flooring',  90,  4, '#f2e3c9'),
   surface('flooring_carpet',   'Cozy Carpet',     'flooring',  150, 8, '#d8c3f0'),
+
+  // Helpers (DESIGN 8.3, 13.1). [DEFAULT, Phase 7] prices.
+  { id: 'scoop_bot',   name: 'Scoop Bot',   category: 'helper', helper: 'scoopBot',   cost: 500, icon: '🤖', color: '#a7cdef', assetKey: 'item.scoop_bot',
+    description: 'Cleans up one poop in the yard every minute' },
+  { id: 'auto_feeder', name: 'Auto-Feeder', category: 'helper', helper: 'autoFeeder', cost: 400, icon: '🍽️', color: '#f6c65b', assetKey: 'item.auto_feeder',
+    description: 'Refills empty food bowls by itself' },
 ]);
 
 export function getItem(id: string): ItemDef | undefined {
@@ -221,7 +234,7 @@ export function getItem(id: string): ItemDef | undefined {
 }
 
 export function isPlaceable(def: ItemDef): def is PlaceableItemDef {
-  return def.category !== 'wallpaper' && def.category !== 'flooring';
+  return def.category !== 'wallpaper' && def.category !== 'flooring' && def.category !== 'helper';
 }
 
 /** Which zone(s) an item can be placed in. */

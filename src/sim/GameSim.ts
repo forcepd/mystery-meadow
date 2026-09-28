@@ -50,6 +50,16 @@ import {
   type Tile,
 } from './systems/placement';
 import { cleanPoop } from './systems/poop';
+import {
+  buyPetSlot,
+  buyRoomExpansion,
+  buyStorageExpansion,
+  changeHouseColor,
+  realEstate,
+  upgradeHouse,
+  type RealEstate,
+} from './systems/realEstate';
+import { hasHelper } from './systems/helpers';
 import { sickChance } from './systems/sickness';
 import { canTrain } from './systems/tricks';
 import {
@@ -336,6 +346,28 @@ export class GameSim {
     return this.command(() => moveAnimalToZone(this.ctx, animalId, zone));
   }
 
+  /** Real Estate: move up to the next house tier; optionally re-pick the color for free. */
+  upgradeHouse(colorId?: string): CommandResult {
+    return this.command(() => upgradeHouse(this.ctx, this.now(), colorId));
+  }
+
+  buyRoomExpansion(): CommandResult {
+    return this.command(() => buyRoomExpansion(this.ctx, this.now()));
+  }
+
+  buyPetSlot(): CommandResult {
+    return this.command(() => buyPetSlot(this.ctx));
+  }
+
+  buyStorageExpansion(): CommandResult {
+    return this.command(() => buyStorageExpansion(this.ctx));
+  }
+
+  /** Repaint the house (costs coins; free as part of an upgrade). */
+  changeHouseColor(colorId: string): CommandResult {
+    return this.command(() => changeHouseColor(this.ctx, colorId));
+  }
+
   // ---- Queries ----------------------------------------------------------------------------
 
   getAnimal(id: string): Readonly<Animal> | undefined {
@@ -407,6 +439,15 @@ export class GameSim {
   sickChance(animalId: string): number | undefined {
     const animal = findAnimal(this.ctx.state.world, animalId);
     return animal && sickChance(this.ctx.state.world, animal);
+  }
+
+  /** Everything the Real Estate screen shows: tiers, next prices, what's maxed out. */
+  realEstate(): RealEstate {
+    return realEstate(this.ctx.state.world);
+  }
+
+  hasHelper(helper: 'scoopBot' | 'autoFeeder'): boolean {
+    return hasHelper(this.ctx.state.world, helper);
   }
 
   /** Would this placement work? (Decorate mode's green/red preview.) */

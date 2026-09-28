@@ -8,7 +8,7 @@ import store from './HomeStore.module.css';
 import { useSim } from './session';
 import { useAppEvent } from './useAppEvent';
 
-type Tab = 'furniture' | 'beds' | 'yard' | 'surfaces' | 'food';
+type Tab = 'furniture' | 'beds' | 'yard' | 'surfaces' | 'food' | 'helpers';
 
 const TABS: { id: Tab; icon: string; label: string; has: (i: ItemDef) => boolean }[] = [
   { id: 'furniture', icon: '🛋️', label: 'Furniture', has: (i) => i.category === 'furniture' },
@@ -21,6 +21,7 @@ const TABS: { id: Tab; icon: string; label: string; has: (i: ItemDef) => boolean
     has: (i) => i.category === 'wallpaper' || i.category === 'flooring',
   },
   { id: 'food', icon: '🥣', label: 'Food & Treats', has: (i) => i.category === 'bowl' },
+  { id: 'helpers', icon: '🤖', label: 'Helpers', has: (i) => i.category === 'helper' },
 ];
 
 /** Short, kid-friendly lines describing what an item does. */
@@ -39,12 +40,14 @@ function details(def: ItemDef): string[] {
       return [`✨ +${def.coziness} Cozy`, 'Covers the whole room'];
     case 'bowl':
       return ['🥣 Holds 5 meals', 'Yard or house'];
+    case 'helper':
+      return [def.description];
   }
 }
 
 /**
- * Home Store (DESIGN 13.1), for coins. Pet Boutique (outfits) comes in Phase 9 and Helpers in
- * Phase 7. Bought things go to the inventory; place them in Decorate mode.
+ * Home Store (DESIGN 13.1), for coins. Pet Boutique (outfits) comes in Phase 9. Bought things
+ * go to the inventory (place them in Decorate mode); helpers start working right away.
  */
 export function HomeStore() {
   const { sim } = useSim();
@@ -69,7 +72,9 @@ export function HomeStore() {
   const buy = (def: ItemDef) => {
     const result = sim.buyItem(def.id);
     if (!result.ok) setMessage({ text: result.reason, ok: false });
-    else setMessage({ text: `You got the ${def.name}!`, ok: true, place: def });
+    else if (def.category === 'helper') {
+      setMessage({ text: `${def.name} is on the job! ${def.icon}`, ok: true });
+    } else setMessage({ text: `You got the ${def.name}!`, ok: true, place: def });
   };
 
   /** Straight to Decorate mode in the right place. */
@@ -115,7 +120,7 @@ export function HomeStore() {
         {message && (
           <div className={message.ok ? styles.success : styles.refusal} role="status">
             {message.text}{' '}
-            {message.place && (
+            {message.place && message.place.category !== 'helper' && (
               <button
                 type="button"
                 className={`${common.button} ${store.placeNow}`}
