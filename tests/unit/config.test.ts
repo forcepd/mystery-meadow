@@ -125,6 +125,7 @@ describe('ITEMS (yard lures, DESIGN 6.5)', () => {
 
   it('only names real species in affinities', () => {
     for (const item of ITEMS) {
+      if (item.category !== 'lure') continue;
       for (const id of item.affinity) expect(getSpecies(id), `${item.id} -> ${id}`).toBeDefined();
     }
   });
@@ -132,9 +133,11 @@ describe('ITEMS (yard lures, DESIGN 6.5)', () => {
   it('has positive costs and lure values', () => {
     for (const item of ITEMS) {
       expect(item.cost).toBeGreaterThan(0);
-      expect(item.lure).toBeGreaterThan(0);
+      if (item.category === 'lure') expect(item.lure).toBeGreaterThan(0);
     }
-    expect(getItem('little_pond')?.lure).toBe(8);
+    const pond = getItem('little_pond');
+    expect(pond?.category === 'lure' && pond.lure).toBe(8);
+    expect(getItem('food_bowl')?.category).toBe('bowl');
     expect(getItem('nope')).toBeUndefined();
   });
 });

@@ -4,9 +4,14 @@ import { salePrice } from '../../../src/sim/systems/selling';
 import { RARITIES, type Animal } from '../../../src/sim/types';
 import { MIN, START, edit, makeAnimal, newSim } from './helpers';
 
+/** Care history averaging 40 maps to exactly 1.0x, so prices here are the base formula. */
+const NEUTRAL_CARE = [40];
+
 function sellable(overrides: Partial<Animal> = {}) {
   const h = edit(newSim(), (s) =>
-    s.world.animals.push(makeAnimal(s, { id: 'x', holdUntil: START, ...overrides })),
+    s.world.animals.push(
+      makeAnimal(s, { id: 'x', holdUntil: START, careHistory: NEUTRAL_CARE, ...overrides }),
+    ),
   );
   return h;
 }
@@ -23,9 +28,10 @@ describe('sale price (DESIGN 7.5)', () => {
 
   it('adds 10% per known trick and rounds', () => {
     const h = newSim();
-    const base = makeAnimal(h.sim.toState(), { rarity: 'uncommon' });
+    const state = h.sim.toState();
+    const base = makeAnimal(state, { rarity: 'uncommon', careHistory: NEUTRAL_CARE });
     const withTricks = (n: number) =>
-      salePrice({
+      salePrice(state.world, {
         ...base,
         tricks: { ...base.tricks, known: Array.from({ length: n }, (_, i) => `t${i}`) },
       });

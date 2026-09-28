@@ -9,7 +9,7 @@ import {
   toSimState,
   type SaveFile,
 } from '../../src/save/schema';
-import { HOUR, MIN, SEC, START, newSim, play } from './sim/helpers';
+import { HOUR, MIN, SEC, START, makeAnimal, newSim, play } from './sim/helpers';
 
 const profile = { id: 'p1', username: 'Sunny_Fox' };
 
@@ -158,5 +158,72 @@ describe('migrations', () => {
   it('stamps the current schema version on new saves', () => {
     expect(currentSave().schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
     expect(currentSave().meta.createdAt).toBe(START);
+  });
+});
+
+describe('migration v1 -> v2 (Phase 3)', () => {
+  /** A real Phase 1/2 save shape: no nextPetAt, no bowl. */
+  function v1Save() {
+    const save = toSaveFile(profile, newSim().sim.toState()) as unknown as {
+      schemaVersion: number;
+      world: {
+        animals: Record<string, unknown>[];
+        petStorage: { animal: Record<string, unknown>; storedAt: number }[];
+        placedItems: unknown[];
+      };
+      meta: { lastSeenAt: number };
+    };
+    save.schemaVersion = 1;
+    save.world.placedItems = [];
+    const state = newSim().sim.toState();
+    const v1Animal = (id: string) => {
+      const a: Record<string, unknown> = { ...makeAnimal(state, { id, nextPoopAt: 5 }) };
+      delete a.nextPetAt;
+      return a;
+    };
+    save.world.animals = [v1Animal('a1')];
+    save.world.petStorage = [{ animal: v1Animal('a2'), storedAt: 1 }];
+    return save;
+  }
+
+  it('adds a petting timer to every animal, out or stored', () => {
+    const out = migrate(v1Save());
+    expect(out.schemaVersion).toBe(2);
+    expect(out.world.animals[0]!.nextPetAt).toBe(out.meta.lastSeenAt);
+    expect(out.world.petStorage[0]!.animal.nextPetAt).toBe(out.meta.lastSeenAt);
+    expect(out.world.animals[0]!.nextPoopAt).toBe(5);
+  });
+
+  it('gives a game with no bowl a full starting bowl, and leaves existing bowls alone', () => {
+    const out = migrate(v1Save());
+    expect(out.world.placedItems).toEqual([
+      {
+        id: 'start1',
+        itemId: 'food_bowl',
+        zone: 'yard',
+        tile: { x: 1, y: 0 },
+        rotation: 0,
+        servings: 5,
+      },
+    ]);
+    const withBowl = v1Save();
+    withBowl.world.placedItems = [
+      {
+        id: 'b',
+        itemId: 'food_bowl',
+        zone: 'yard',
+        tile: { x: 3, y: 1 },
+        rotation: 0,
+        servings: 2,
+      },
+    ];
+    expect(migrate(withBowl).world.placedItems).toHaveLength(1);
+  });
+
+  it('a migrated v1 save loads and plays', () => {
+    const save = migrate(v1Save());
+    const sim = GameSim.fromState(toSimState(save), new FakeClock(save.meta.lastSeenAt));
+    expect(sim.bowls()).toHaveLength(1);
+    expect(sim.pet('a1').ok).toBe(true);
   });
 });

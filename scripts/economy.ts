@@ -1,5 +1,5 @@
 /**
- * Economy harness CLI. Usage: npm run economy -- [--hours 3] [--seed 1] [--runs 1]
+ * Economy harness CLI. Usage: npm run economy -- [--hours 3] [--seed 1] [--runs 1] [--neglect]
  * Run it after any balance change (DESIGN 22).
  */
 import { formatEconomyReport, runEconomy } from '../src/sim/harness/economy';
@@ -17,7 +17,8 @@ const runs = arg('runs', 1);
 
 for (let i = 0; i < runs; i++) {
   const started = performance.now();
-  const report = runEconomy({ hours, seed: seed + i });
+  const bot = process.argv.includes('--neglect') ? 'neglect' : 'caring';
+  const report = runEconomy({ hours, seed: seed + i, bot });
   console.log(formatEconomyReport(report, performance.now() - started));
   if (i < runs - 1) console.log();
 }

@@ -57,7 +57,14 @@ export const BALANCE = deepFreeze({
     petHappinessGain: 15,
     petCooldownSeconds: 20,
     crowdedHappinessDrainMultiplier: 1.5,
+    // [DEFAULT, Phase 3] One serving fills this much hunger (capped at 100).
+    hungerPerServing: 100,
+    // [DEFAULT, Phase 3] Zone cleanliness = 100 - this x uncleaned poops in the zone (min 0).
+    cleanlinessPerPoop: 20,
   },
+
+  // [DEFAULT, Phase 3] Treat from the Animal Card (DESIGN 8.2): costs coins, +hunger, +happiness.
+  treat: { cost: 5, hungerGain: 30, happinessGain: 25 },
 
   poop: { minMinutes: 8, maxMinutes: 14 },
 
@@ -74,7 +81,12 @@ export const BALANCE = deepFreeze({
 
   vet: { visitFee: 20, treatmentCost: 10, freeClinicWaitMinutes: 3 },
 
-  care: { minMultiplier: 0.8, maxMultiplier: 1.3, windowMinutes: 10 },
+  // careMultiplier maps the average of hunger, happiness and zone cleanliness over the last
+  // windowMinutes linearly onto min..max ([DEFAULT, Phase 3] mapping; one sample per sampleSeconds).
+  care: { minMultiplier: 0.8, maxMultiplier: 1.3, windowMinutes: 10, sampleSeconds: 60 },
+
+  // DESIGN 10.2: pet names.
+  names: { minLength: 1, maxLength: 14 },
 
   tricks: {
     sessionsToLearn: 3,

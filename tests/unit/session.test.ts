@@ -3,7 +3,7 @@ import { DEFAULT_PROFILE, GameSession } from '../../src/bridge/gameSession';
 import { MemoryStore, type KeyValueStore } from '../../src/save/SaveManager';
 import { saveKey, type SaveFile } from '../../src/save/schema';
 import { FakeClock } from '../../src/sim/clock';
-import { debugSpawnVisitor } from '../../src/sim/debugCommands';
+import { debugSetNeeds, debugSpawnVisitor } from '../../src/sim/debugCommands';
 import { BALANCE } from '../../src/config/balance';
 import { HOUR, MIN, SEC, START } from './sim/helpers';
 
@@ -54,9 +54,24 @@ describe('GameSession', () => {
     session.sim.revealVisitor(id);
     playFor(session, source, BALANCE.holdMinutes * MIN);
     const animal = session.sim.state.world.animals[0]!;
+    const price = session.sim.salePrice(animal.id)!;
     expect(session.sim.sell(animal.id).ok).toBe(true);
     await session.save(); // wait for the queued save to finish
-    expect((await saved(store)).world.coins).toBe(BALANCE.startingCoins + 20);
+    expect((await saved(store)).world.coins).toBe(BALANCE.startingCoins + price);
+  });
+
+  it('saves right after a treat (a purchase) and a rename', async () => {
+    const { session, store } = await start();
+    debugSpawnVisitor(session.sim, { speciesId: 'bunny', pregnant: false });
+    session.sim.revealVisitor(session.sim.state.world.gateQueue[0]!.id);
+    const id = session.sim.state.world.animals[0]!.id;
+    session.sim.rename(id, 'Pip');
+    await session.save();
+    expect((await saved(store)).world.animals[0]!.name).toBe('Pip');
+    debugSetNeeds(session.sim, 10, 10);
+    session.sim.feedTreat(id);
+    await session.save();
+    expect((await saved(store)).world.coins).toBe(BALANCE.startingCoins - BALANCE.treat.cost);
   });
 
   it('saves when hidden and treats hidden time as offline when visible again', async () => {

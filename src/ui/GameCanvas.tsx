@@ -15,11 +15,29 @@ export function GameCanvas() {
     const game = createGame(host, session);
     // Counts world taps on the host element, so tests can prove UI taps don't fall through.
     let taps = 0;
+    // Phaser converts taps using a cached copy of where the canvas sits on the page. That copy
+    // can be stale (the centered canvas moves after boot, the window resizes, the iPad rotates),
+    // which made first taps land off target by the letterbox margin. Re-read the canvas position
+    // at the start of every press (capture phase, so before Phaser's own listener) and on resize.
+    const remeasure = () => game.scale.refresh();
+    const updateBounds = () => game.scale.updateBounds();
+    const pressEvents = ['pointerdown', 'mousedown', 'touchstart'] as const;
+    for (const type of pressEvents) {
+      host.addEventListener(type, updateBounds, { capture: true, passive: true });
+    }
+    const observer = new ResizeObserver(remeasure);
+    observer.observe(host);
     const offs = [
       appBus.on('canvasTap', () => host.setAttribute('data-canvas-taps', String(++taps))),
-      appBus.on('worldReady', () => host.setAttribute('data-world-ready', 'true')),
+      appBus.on('worldReady', () => {
+        remeasure();
+        host.setAttribute('data-world-ready', 'true');
+      }),
     ];
     return () => {
+      for (const type of pressEvents)
+        host.removeEventListener(type, updateBounds, { capture: true });
+      observer.disconnect();
       offs.forEach((off) => off());
       game.destroy(true);
     };

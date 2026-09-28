@@ -232,3 +232,90 @@ Everything short of that is verified locally: build, unit tests, and e2e on emul
 - A baby's name label keeps the adult position, so it floats a little low under the smaller body.
 - The iPad "Add to Home Screen" prompt (DESIGN 18.4) is still not built (planned with onboarding, Phase 8).
 - A kept animal never gets a "Ready to sell" toast. That's by design, but Keep itself arrives in Phase 5.
+
+## Phase 3: Care (built 2026-09-27)
+
+### What was built
+
+**Sim (`src/sim/systems/`)**
+
+- `needs.ts`: hunger drains 100 → 0 over 30 min and happiness over 40 min. Happiness drains ×1.5 while Crowded (×2 while sick, ready for Phase 4). Zone cleanliness is `100 − 20 × poops in the zone`.
+  - Care samples (the average of the three needs) are recorded once a minute; the last 10 minutes are kept.
+  - **`careMultiplier`** maps that average linearly onto 0.8–1.3 and now feeds the sale price. It uses current needs when there are no samples yet.
+- `feeding.ts`: an animal with hunger < 50 walks to a bowl in its zone that has food and eats one serving (fills hunger). Tapping a bowl refills it for free. **Treats** cost 5 coins for +30 hunger and +25 happiness; they're refused when the animal is already full or you're short on coins.
+- `poop.ts`: every 8–14 min an animal poops at its spot. Tap to clean.
+- `petting.ts`: tap-and-hold gives +15 happiness, then a 20 s cooldown.
+- `naming.ts`: 1–14 characters (letters in any language, numbers, space, `' . -`). The local word filter (`src/config/wordFilter.ts`) blocks whole words ("Stupid") and fragments anywhere, including leetspeak and spaced-out tricks ("sh1t", "f u c k"). Innocent names that contain a blocked word survive ("Cassie", "Grape", "Cucumber", "Fuku"). An empty name clears it.
+- **Offline (DESIGN 14):** needs don't decay, nobody poops or eats, and care sampling pauses. Poop and wander timers that come due while away just roll forward, so there's no pile of poop and no stampede on return.
+- `GameSim` gains `refillBowl`, `feedTreat`, `cleanPoop`, `pet`, `rename`, `careMultiplier`, `cleanliness`, `bowls`, and events for eating, bowl empty/refill, treats, petting, poop appear/clean, and rename.
+- New content: `src/config/yard.ts` (12×5 yard tile grid, `STARTING_ITEMS` = one food bowl) and the `food_bowl` item.
+
+**Save v2** (`src/save/migrations.ts`): v1 → v2 gives every animal (out or stored) `nextPetAt`, and gives a game with no bowl a full starting bowl. Migration steps now turn any crash into a clean `SaveError`, so a malformed old save can't take the game down.
+
+**World**
+
+- **Food bowl:** the food mound shrinks as it's eaten, and it shows a bouncing "!" when empty. Tap to refill ("nom!" pops when an animal eats; "Full!" if it's already full).
+- **Poop:** a little swirl with wavy lines. Tap it for a sparkle and it shrinks away.
+- **Petting:** press and hold (450 ms) an animal to pet it, with floating hearts. A quick tap still opens the card. If it's still on cooldown, "💕 Loved that!" shows instead.
+- Thought bubbles over animals when hunger < 25 (🍽️) or happiness < 25 (😢), so neglect is visible in the yard, not just on the card.
+- Treats show 🍪 and hearts. Long walks (e.g. to the bowl) are capped at 2.5 s.
+
+**Animal Card**
+
+- Food / Happy / Clean bars (green/yellow/orange), a "Press and hold to pet!" tip, and "Care bonus +20%" / "Needs care −20%" next to the price.
+- Tap the name (✏️) to rename it. The keyboard-friendly input shows the filter's reason when a name is refused.
+- A 🍪 Treat button next to Sell. Refused actions explain themselves.
+
+**Other**
+
+- A "The food bowl is empty! Tap it to refill." toast.
+- The session also saves right after treats (a purchase) and renames.
+- Debug Panel: "😢 Neglect all" / "💖 Fill all" needs buttons.
+- **Economy harness** has `caring` (default: refills, cleans, pets) and `neglect` bots: `npm run economy -- --neglect`.
+
+**Tests**
+
+- **Unit:** 213 in total (35 new). They cover:
+  - Decay rates and clamping, Crowded drain, and offline pause.
+  - Eating: hungry thresholds, sharing servings, zone-only bowls.
+  - Free refill, and treats (cost, cap, refusals).
+  - Poop timing and position, cleaning, per-zone cleanliness, and no offline poop.
+  - The pet cooldown, the care multiplier mapping, and the sampling window.
+  - Neglect vs care pricing, and the naming rules and filter.
+  - The v1 → v2 migration, save-after-treat/rename, and caring-vs-neglect bots in the harness.
+- **E2E:** 22 tests × 3 browser setups (6 new):
+  - Hold to pet (and a hold doesn't open the card).
+  - Tapping poop raises Clean.
+  - Tapping the empty bowl feeds a hungry animal.
+  - A treat costs 5 coins.
+  - A neglected Rare sells for 80 with "Needs care −20%".
+  - Renaming (unkind names refused), and the name survives a reload.
+
+### Phase 3 "Done when"
+
+- **Neglect lowers the price and care raises it.** The care multiplier runs 0.8× (neglected) to 1.3× (well cared for). Averaged over 30 bots × 24 h, the caring bot earns **~606 coins/hour** (care ×1.25) and the neglectful bot **~478** (×0.98). A unit test and an e2e test both check this.
+- **Need math and multipliers are tested:** see the list above.
+
+### Bugs found and fixed
+
+- **First tap landed off target on desktop.** Phaser caches where the canvas sits on the page. In the letterboxed desktop layout its copy was stale after boot, so the first tap landed 64 px off (a probe measured 711 instead of 640). In Phase 2 I wrongly blamed this on Playwright and papered over it in the test helper. Now the game re-reads the canvas position at the start of every press (capture phase) and on resize. The test workaround is gone.
+- The e2e suite could silently reuse a hand-started `vite preview` on port 4173 serving an old build. E2E now uses its own port (4317).
+
+### Defaults chosen (spec left open) — please confirm or change
+
+1. **Treat:** 5 coins, +30 hunger, +25 happiness; refused if already full.
+2. **One serving fills hunger to 100.** With 5 servings per bowl, a bowl feeds about 5 meals, so with a full yard the kid refills it every 10–15 minutes.
+3. **Cleanliness** drops 20 per uncleaned poop in the zone (5 poops = 0).
+4. **Care multiplier mapping:** linear, where a 0 average → 0.8, 40 → 1.0, and 100 → 1.3. The average includes zone cleanliness as the third need. One sample per minute; the last 10 samples count.
+5. **Pacing drift:** good care pays ~20% above the DESIGN 15.1 estimate (~500/h assumed ×1.0). **Designer call:** keep it (care feels rewarding), or lower `care.maxMultiplier` / base prices.
+6. **Starting bowl:** one food bowl in the yard near the house (tile 1,0). More bowls come from the Home Store (Phase 6, default price 40).
+7. **Hold to pet = 450 ms.** A quick tap opens the card. A press that drifts more than 28 px is neither.
+8. **Visible neglect cues:** thought bubbles when hunger or happiness < 25 (render-only threshold).
+9. **Word filter:** a local list in `src/config/wordFilter.ts`. Silly-but-harmless words (poop, fart, butt) are allowed as pet names on purpose. Edit the list freely.
+10. **Eating is instant.** The animal's hunger fills as it starts walking to the bowl (the walk is at most 2.5 s).
+
+### Known issues
+
+- House bowls, beds, and coziness come with the House in Phase 6. `tickFeeding` already works per zone.
+- Headless test browsers can't show color emoji, so 🍽️, 🪙 and friends look gray in screenshots only.
+- Real-device check still pending: iPad tap-and-hold feel, and the on-screen keyboard with the rename field.

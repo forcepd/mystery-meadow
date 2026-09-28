@@ -16,7 +16,17 @@ export interface LureItemDef {
   readonly assetKey: string;
 }
 
-export type ItemDef = LureItemDef;
+/** Food bowl (DESIGN 8.2). Holds `needs.bowlServings`; refilling is free. */
+export interface BowlItemDef {
+  readonly id: string;
+  readonly name: string;
+  readonly category: 'bowl';
+  /** [DEFAULT, Phase 3] Home Store price for extra bowls (the store arrives in Phase 6). */
+  readonly cost: number;
+  readonly assetKey: string;
+}
+
+export type ItemDef = LureItemDef | BowlItemDef;
 
 const lure = (
   id: string,
@@ -46,6 +56,7 @@ export const ITEMS: readonly ItemDef[] = deepFreeze([
   lure('warm_rock',        'Warm Rock',        900,  12, ['baby_dragon']),
   lure('rainbow_fountain', 'Rainbow Fountain', 1500, 15, ['unicorn']),
   lure('moon_lantern',     'Moon Lantern',     1500, 15, ['moon_bunny']),
+  { id: 'food_bowl', name: 'Food Bowl', category: 'bowl', cost: 40, assetKey: 'item.food_bowl' },
 ]);
 
 export function getItem(id: string): ItemDef | undefined {

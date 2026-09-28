@@ -1,6 +1,7 @@
 import { BALANCE } from '../../config/balance';
 import { minutes, nextId, seconds, type SimContext } from '../context';
 import type { Animal, Ms, Rarity, Vec2, Zone } from '../types';
+import { NEED_MAX } from './needs';
 
 export interface NewAnimal {
   speciesId: string;
@@ -28,7 +29,7 @@ export function createAnimal(ctx: SimContext, spec: NewAnimal): Animal {
     holdUntil: spec.at + minutes(BALANCE.holdMinutes),
     zone: spec.zone,
     position: { ...spec.position },
-    needs: { hunger: 100, happiness: 100 },
+    needs: { hunger: NEED_MAX, happiness: NEED_MAX },
     careHistory: [],
     immunities: {},
     isKept: false,
@@ -37,6 +38,7 @@ export function createAnimal(ctx: SimContext, spec: NewAnimal): Animal {
     nextPoopAt: spec.at + minutes(rng.range(BALANCE.poop.minMinutes, BALANCE.poop.maxMinutes)),
     nextWanderAt:
       spec.at + seconds(rng.range(BALANCE.wander.minSeconds, BALANCE.wander.maxSeconds)),
+    nextPetAt: spec.at,
   };
   if (spec.isBaby) {
     animal.bornAt = spec.at;

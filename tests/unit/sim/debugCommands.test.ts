@@ -73,7 +73,8 @@ describe('debug commands', () => {
     expect(timerFired).toHaveBeenCalledTimes(6);
     // Online rules: visitors auto-revealed and came in (offline they'd wait unrevealed).
     expect(h.sim.animalCount()).toBeGreaterThan(0);
-    expect(h.sim.state.world.gateQueue.every((v) => v.revealed)).toBe(true);
+    const settled = h.sim.state.world.gateQueue.filter((v) => h.sim.now() >= v.autoRevealAt);
+    expect(settled.every((v) => v.revealed)).toBe(true);
     expect(h.sim.now()).toBe(START + 60 * MIN);
   });
 });

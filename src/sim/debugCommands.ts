@@ -64,3 +64,10 @@ export function debugAddGems(sim: GameSim, amount: number): void {
 export function debugRunOnline(sim: GameSim): void {
   sim.debugRun((ctx, clockNow) => runOnline(ctx, clockNow));
 }
+
+/** Sets every animal's needs (e.g. make everyone hungry to test feeding and care prices). */
+export function debugSetNeeds(sim: GameSim, hunger: number, happiness: number): void {
+  sim.debugRun((ctx) => {
+    for (const a of ctx.state.world.animals) a.needs = { hunger, happiness };
+  });
+}

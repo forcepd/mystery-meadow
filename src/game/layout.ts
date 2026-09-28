@@ -1,3 +1,4 @@
+import { tileCenter } from '../config/yard';
 import type { Vec2 } from '../sim/types';
 import { WORLD_HEIGHT, WORLD_WIDTH } from './constants';
 
@@ -19,6 +20,11 @@ export const LAYOUT = {
 export function yardToWorld(p: Vec2): Vec2 {
   const { left, top, right, bottom } = LAYOUT.yard;
   return { x: left + p.x * (right - left), y: top + p.y * (bottom - top) };
+}
+
+/** World position of a yard tile's center (bowls, and lures in Phase 6). */
+export function tileToWorld(tile: { x: number; y: number }): Vec2 {
+  return yardToWorld(tileCenter(tile));
 }
 
 export function gateSlot(index: number): Vec2 {

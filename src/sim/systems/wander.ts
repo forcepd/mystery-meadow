@@ -8,11 +8,11 @@ import { randomPosition } from './animals';
  * Phase 6 adds switching zones (yard <-> house) at the same moment. Paused offline.
  */
 export function tickWander(ctx: SimContext, t: Ms): void {
-  if (ctx.offline) return;
   const { minSeconds, maxSeconds } = BALANCE.wander;
   for (const animal of ctx.state.world.animals) {
     if (t < animal.nextWanderAt) continue;
-    animal.position = randomPosition(ctx);
     animal.nextWanderAt = t + seconds(ctx.rng.range(minSeconds, maxSeconds));
+    // Offline, timers just roll forward so everyone doesn't move at once on return.
+    if (!ctx.offline) animal.position = randomPosition(ctx);
   }
 }

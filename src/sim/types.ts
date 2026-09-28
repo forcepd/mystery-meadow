@@ -44,6 +44,8 @@ export interface Animal {
   tricks: { known: string[]; progress: Record<string, number>; nextTrainAt: Ms };
   nextPoopAt: Ms;
   nextWanderAt: Ms;
+  /** Petting cooldown ends (DESIGN 8.4). Added in save v2. */
+  nextPetAt: Ms;
 }
 
 /** Kept pet in Pet Storage (paused). On retrieval, timestamps shift by (now - storedAt). */

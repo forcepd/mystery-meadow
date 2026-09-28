@@ -4,8 +4,44 @@ import { CURRENT_SCHEMA_VERSION, type SaveFile } from './schema';
 export type Migration = (save: Record<string, unknown>) => Record<string, unknown>;
 
 export const MIGRATIONS: Readonly<Record<number, Migration>> = {
-  // Example for the first real change:
-  // 1: (save) => ({ ...save, schemaVersion: 2, profile: { ...(save.profile as object), avatar: DEFAULT_AVATAR } }),
+  /**
+   * v1 -> v2 (Phase 3, Care): every animal gets a petting cooldown (`nextPetAt`, ready now),
+   * and a game with no food bowl gets the starting bowl, full. Values are literal on purpose:
+   * a migration must keep producing the same result even if the balance config changes later.
+   */
+  1: (save) => {
+    const world = save.world as {
+      animals: Record<string, unknown>[];
+      petStorage: { animal: Record<string, unknown> }[];
+      placedItems: { id: string; itemId: string }[];
+    };
+    const meta = save.meta as { lastSeenAt: number };
+    const addPetTimer = (a: Record<string, unknown>) => ({ nextPetAt: meta.lastSeenAt, ...a });
+    const hasBowl = world.placedItems.some((p) => p.itemId === 'food_bowl');
+    const bowlId = world.placedItems.some((p) => p.id === 'start1') ? 'start1-v2' : 'start1';
+    return {
+      ...save,
+      schemaVersion: 2,
+      world: {
+        ...world,
+        animals: world.animals.map(addPetTimer),
+        petStorage: world.petStorage.map((p) => ({ ...p, animal: addPetTimer(p.animal) })),
+        placedItems: hasBowl
+          ? world.placedItems
+          : [
+              ...world.placedItems,
+              {
+                id: bowlId,
+                itemId: 'food_bowl',
+                zone: 'yard',
+                tile: { x: 1, y: 0 },
+                rotation: 0,
+                servings: 5,
+              },
+            ],
+      },
+    };
+  },
 };
 
 export class SaveError extends Error {
@@ -39,7 +75,15 @@ export function migrate(
   for (let v = startVersion; v < currentVersion; v++) {
     const step = migrations[v];
     if (!step) throw new SaveError(`No migration from version ${v}`, 'missingMigration');
-    save = step(save);
+    try {
+      save = step(save);
+    } catch (error) {
+      // A step assumes the shape of version v; anything else is a broken save.
+      throw new SaveError(
+        `Save could not be upgraded from version ${v}: ${String(error)}`,
+        'invalid',
+      );
+    }
     if (save.schemaVersion !== v + 1) {
       throw new SaveError(`Migration from ${v} did not produce version ${v + 1}`, 'invalid');
     }

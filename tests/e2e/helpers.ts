@@ -1,5 +1,5 @@
 import { expect, type Locator, type Page } from '@playwright/test';
-import { gateSlot, yardToWorld, WORLD_WIDTH } from '../../src/game/layout';
+import { gateSlot, tileToWorld, yardToWorld, WORLD_WIDTH } from '../../src/game/layout';
 import { toSaveFile } from '../../src/save/schema';
 import { FakeClock } from '../../src/sim/clock';
 import { GameSim } from '../../src/sim/GameSim';
@@ -16,10 +16,6 @@ export async function press(
     await target.tap(options);
     return;
   }
-  // A real mouse moves before it clicks. Phaser hit-tests where the pointer last moved, so a
-  // click that teleports the mouse (as Playwright's does) can miss on the first press.
-  await target.hover({ ...options, force: true });
-  await page.waitForTimeout(50);
   await target.click(options);
 }
 
@@ -40,6 +36,28 @@ export async function tapWorld(page: Page, world: { x: number; y: number }) {
   const box = (await canvas.boundingBox())!;
   const scale = box.width / WORLD_WIDTH;
   await press(page, canvas, { position: { x: world.x * scale, y: world.y * scale } });
+}
+
+/** Presses and holds at a world coordinate (tap-and-hold). Uses the mouse on every device. */
+export async function holdWorld(page: Page, world: { x: number; y: number }, ms = 800) {
+  const canvas = page.locator('[data-testid="game-canvas"] canvas');
+  const box = (await canvas.boundingBox())!;
+  const scale = box.width / WORLD_WIDTH;
+  const x = box.x + world.x * scale;
+  const y = box.y + world.y * scale;
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.waitForTimeout(ms);
+  await page.mouse.up();
+}
+
+export function bowlTapPoint(tile = { x: 1, y: 0 }) {
+  const w = tileToWorld(tile);
+  return { x: w.x, y: w.y + 5 };
+}
+
+export function poopTapPoint(p: { x: number; y: number }) {
+  return yardToWorld(p);
 }
 
 /** Where to tap an animal whose normalized yard position is `p` (a bit above its feet). */
@@ -74,13 +92,15 @@ export function testAnimal(now: number, overrides: Partial<Animal> = {}): Animal
     zone: 'yard',
     position: { x: 0.5, y: 0.5 },
     needs: { hunger: 100, happiness: 100 },
-    careHistory: [],
+    // A care average of 40 maps to exactly 1.0x, so prices equal the base price.
+    careHistory: [40],
     immunities: {},
     isKept: false,
     outfit: {},
     tricks: { known: [], progress: {}, nextTrainAt: now },
     nextPoopAt: now + 60 * 60_000,
     nextWanderAt: now + 60 * 60_000,
+    nextPetAt: now,
     ...overrides,
   };
 }

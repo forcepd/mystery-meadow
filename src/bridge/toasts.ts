@@ -23,6 +23,7 @@ export const TOASTS: {
         ? `${displayName(mother)} had a baby!`
         : `${displayName(mother)} had ${babies.length} babies!`,
   }),
+  bowlEmptied: () => ({ icon: '🥣', text: 'The food bowl is empty! Tap it to refill.' }),
   readyToSell: ({ animal }) => ({ icon: '🪙', text: `${displayName(animal)} is ready to sell!` }),
   animalSold: ({ animal, price }) => ({
     icon: '💖',

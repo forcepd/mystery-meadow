@@ -79,12 +79,25 @@ describe('economy harness (DESIGN 21, Phase 1 done-when)', () => {
     expect(text).toContain('Coins earned');
   });
 
-  it('lands near the DESIGN 15.1 pacing estimate (~500 coins/hour) on average', () => {
-    let total = 0;
-    const runs = 10;
-    for (let seed = 1; seed <= runs; seed++) total += runEconomy({ hours: 24, seed }).coinsPerHour;
-    const avg = total / runs;
-    expect(avg).toBeGreaterThan(400);
-    expect(avg).toBeLessThan(600);
+  it('pays a caring player more than a neglectful one (Phase 3 done-when)', () => {
+    const avg = (bot: 'caring' | 'neglect') => {
+      let coins = 0;
+      let care = 0;
+      const runs = 8;
+      for (let seed = 1; seed <= runs; seed++) {
+        const r = runEconomy({ hours: 12, seed, bot });
+        coins += r.coinsPerHour;
+        care += r.avgCareMultiplier;
+      }
+      return { coins: coins / runs, care: care / runs };
+    };
+    const caring = avg('caring');
+    const neglect = avg('neglect');
+    expect(caring.care).toBeGreaterThan(1.15);
+    expect(neglect.care).toBeLessThan(1.05);
+    expect(caring.coins).toBeGreaterThan(neglect.coins * 1.15);
+    // DESIGN 15.1 estimates ~500/hour at care x1.0; good care lands above it.
+    expect(neglect.coins).toBeGreaterThan(380);
+    expect(caring.coins).toBeLessThan(750);
   });
 });

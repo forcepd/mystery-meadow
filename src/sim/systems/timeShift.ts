@@ -10,6 +10,7 @@ export function shiftAnimal(animal: Animal, delta: Ms): void {
   animal.holdUntil += delta;
   animal.nextPoopAt += delta;
   animal.nextWanderAt += delta;
+  animal.nextPetAt += delta;
   animal.tricks.nextTrainAt += delta;
   if (animal.bornAt !== undefined) animal.bornAt += delta;
   if (animal.grownAt !== undefined) animal.grownAt += delta;

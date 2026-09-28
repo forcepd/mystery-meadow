@@ -1,6 +1,9 @@
 import { BALANCE } from '../config/balance';
 import { emptySummary, hours, seconds, type SimContext } from './context';
+import { tickFeeding } from './systems/feeding';
 import { tickLifecycle } from './systems/lifecycle';
+import { tickCareSamples, tickNeeds } from './systems/needs';
+import { tickPoop } from './systems/poop';
 import { tickBirths } from './systems/pregnancy';
 import { shiftWorld } from './systems/timeShift';
 import { refreshGateTimers, tickGate, tickVisitorTimer } from './systems/visitors';
@@ -14,6 +17,10 @@ export function runTick(ctx: SimContext, t: Ms): void {
   const prev = ctx.state.meta.lastSeenAt;
   tickBirths(ctx, t);
   tickLifecycle(ctx, prev, t);
+  tickNeeds(ctx, t - prev);
+  tickFeeding(ctx);
+  tickPoop(ctx, t);
+  tickCareSamples(ctx, t);
   tickVisitorTimer(ctx, t);
   tickGate(ctx, t);
   tickWander(ctx, t);

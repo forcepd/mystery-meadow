@@ -1,5 +1,6 @@
 import { BALANCE } from '../config/balance';
 import { DEFAULT_HOUSE_COLOR } from '../config/houseColors';
+import { STARTING_ITEMS } from '../config/yard';
 import type { Clock } from './clock';
 import { emptySummary, minutes, seconds, type SimContext } from './context';
 import { Emitter } from './emitter';
@@ -14,10 +15,23 @@ import {
   totalCapacity,
 } from './systems/housing';
 import { lureScore } from './systems/rarity';
+import { feedTreat, isBowl, refillBowl } from './systems/feeding';
+import { renameAnimal } from './systems/naming';
+import { careMultiplier, cleanliness } from './systems/needs';
+import { pet } from './systems/petting';
+import { cleanPoop } from './systems/poop';
 import { canSell, findAnimal, salePrice, sell } from './systems/selling';
 import { revealVisitor } from './systems/visitors';
 import { runOffline, runOnline } from './tick';
-import type { Animal, CommandResult, Ms, OfflineSummary, SimState } from './types';
+import type {
+  Animal,
+  CommandResult,
+  Ms,
+  OfflineSummary,
+  PlacedItem,
+  SimState,
+  Zone,
+} from './types';
 
 export type Badge = 'new' | 'pregnant' | 'baby' | 'sick' | 'readyToSell' | 'kept';
 
@@ -94,6 +108,14 @@ export class GameSim {
         dailyTrickGems: { date: '', earned: 0 },
       },
     };
+    state.world.placedItems = STARTING_ITEMS.map((item, i) => ({
+      id: `start${i + 1}`,
+      itemId: item.itemId,
+      zone: item.zone,
+      tile: { ...item.tile },
+      rotation: 0,
+      ...(item.itemId === 'food_bowl' ? { servings: BALANCE.needs.bowlServings } : {}),
+    }));
     return new GameSim(clock, state);
   }
 
@@ -150,6 +172,29 @@ export class GameSim {
     return this.command(() => sell(this.ctx, animalId, this.now()));
   }
 
+  /** Tap a food bowl: fills it back up for free. */
+  refillBowl(bowlId: string): CommandResult {
+    return this.command(() => refillBowl(this.ctx, bowlId));
+  }
+
+  feedTreat(animalId: string): CommandResult {
+    return this.command(() => feedTreat(this.ctx, animalId));
+  }
+
+  cleanPoop(poopId: string): CommandResult {
+    return this.command(() => cleanPoop(this.ctx, poopId));
+  }
+
+  /** Tap-and-hold petting. */
+  pet(animalId: string): CommandResult {
+    return this.command(() => pet(this.ctx, animalId, this.now()));
+  }
+
+  /** Names an animal (an empty name clears it). */
+  rename(animalId: string, name: string): CommandResult {
+    return this.command(() => renameAnimal(this.ctx, animalId, name));
+  }
+
   // ---- Queries ----------------------------------------------------------------------------
 
   getAnimal(id: string): Readonly<Animal> | undefined {
@@ -185,8 +230,23 @@ export class GameSim {
   }
 
   salePrice(animalId: string): number | undefined {
-    const animal = this.getAnimal(animalId);
-    return animal && salePrice(animal);
+    const animal = findAnimal(this.ctx.state.world, animalId);
+    return animal && salePrice(this.ctx.state.world, animal);
+  }
+
+  /** 0.8..1.3 from recent care (DESIGN 7.5). */
+  careMultiplier(animalId: string): number | undefined {
+    const animal = findAnimal(this.ctx.state.world, animalId);
+    return animal && careMultiplier(this.ctx.state.world, animal);
+  }
+
+  /** Zone cleanliness 0..100. */
+  cleanliness(zone: Zone): number {
+    return cleanliness(this.ctx.state.world, zone);
+  }
+
+  bowls(): readonly PlacedItem[] {
+    return this.ctx.state.world.placedItems.filter(isBowl);
   }
 
   canSell(animalId: string): CommandResult {

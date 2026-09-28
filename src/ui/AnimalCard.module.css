@@ -25,6 +25,72 @@
   padding-right: 52px;
 }
 
+.needs {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.need {
+  display: grid;
+  grid-template-columns: 26px 58px 1fr;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.needIcon {
+  font-size: 20px;
+}
+
+.bar {
+  height: 16px;
+  border-radius: var(--radius-pill);
+  background: #efe7d2;
+  overflow: hidden;
+}
+
+.fill {
+  height: 100%;
+  border-radius: var(--radius-pill);
+  transition: width 400ms ease;
+}
+
+.good {
+  background: #6cc46a;
+}
+
+.okay {
+  background: #f2c14e;
+}
+
+.low {
+  background: #ef8a6b;
+}
+
+.tip {
+  margin: -4px 0 0;
+  font-size: 15px;
+  opacity: 0.75;
+}
+
+.careHigh {
+  color: #b0407a;
+  font-weight: 700;
+}
+
+.careLow {
+  color: #a3591f;
+  font-weight: 700;
+}
+
+.actions .secondary {
+  background: #f6c65b;
+  box-shadow: 0 4px 0 #d49a2a;
+  color: var(--color-ink);
+}
+
 .portrait {
   flex: none;
   width: 72px;
@@ -39,10 +105,70 @@
     0 0 16px 6px #ff8fd0;
 }
 
+.titles {
+  min-width: 0;
+}
+
+.nameButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--touch-min);
+  margin: -6px 0 -4px -6px;
+  padding: 0 6px;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+.nameButton:focus-visible {
+  outline: 4px solid var(--color-ink);
+}
+
 .name {
-  margin: 0;
   font-size: 26px;
+  font-weight: 800;
   line-height: 1.1;
+}
+
+.pencil {
+  font-size: 16px;
+  opacity: 0.7;
+}
+
+.nameForm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.nameInput {
+  width: 150px;
+  min-height: var(--touch-min);
+  padding: 0 10px;
+  border: 3px solid var(--color-panel-border);
+  border-radius: 12px;
+  font: inherit;
+  font-size: 20px;
+  font-weight: 700;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.nameButtons {
+  display: flex;
+  gap: 6px;
+}
+
+.nameError {
+  flex-basis: 100%;
+  margin: 0;
+  color: #a33b22;
+  font-weight: 700;
+  font-size: 16px;
 }
 
 .species {

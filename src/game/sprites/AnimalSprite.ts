@@ -9,15 +9,22 @@ import { drawCritter } from './critter';
 const BABY_SCALE = 0.65;
 const WALK_SPEED = 110; // world px per second
 const AMBLE_RADIUS = 30;
+const MAX_WALK_MS = 2500;
 
-const BADGE_ICONS: Partial<Record<Badge, string>> = {
+/** Below this, a need shows as a thought bubble over the animal (render-only cue). */
+const LOW_NEED = 25;
+
+type Icon = Badge | 'hungry' | 'sad';
+const ICONS: Partial<Record<Icon, string>> = {
   sick: '🤒',
+  hungry: '🍽️',
+  sad: '😢',
   pregnant: '🍼',
   readyToSell: '🪙',
   kept: '❤️',
   new: '✨',
 };
-const BADGE_ORDER: Badge[] = ['sick', 'pregnant', 'readyToSell', 'kept', 'new'];
+const ICON_ORDER: Icon[] = ['sick', 'hungry', 'sad', 'pregnant', 'readyToSell', 'kept', 'new'];
 
 /**
  * One animal in the yard. Its sim position is its "home"; between sim moves it ambles
@@ -101,9 +108,12 @@ export class AnimalSprite extends Phaser.GameObjects.Container {
   sync(animal: Animal, badges: readonly Badge[], home: Vec2): void {
     if (this.leaving) return;
     const baby = badges.includes('baby');
-    const icons = BADGE_ORDER.filter((b) => badges.includes(b))
+    const active = new Set<Icon>(badges);
+    if (animal.needs.hunger < LOW_NEED) active.add('hungry');
+    if (animal.needs.happiness < LOW_NEED) active.add('sad');
+    const icons = ICON_ORDER.filter((i) => active.has(i))
       .slice(0, 2)
-      .map((b) => BADGE_ICONS[b])
+      .map((i) => ICONS[i])
       .join('');
     const key = `${displayName(animal)}|${icons}|${baby}`;
     if (key !== this.lastKey) {
@@ -144,7 +154,8 @@ export class AnimalSprite extends Phaser.GameObjects.Container {
       onDone?.();
       return;
     }
-    const duration = Math.max(250, (dist / WALK_SPEED) * 1000);
+    // Long trips (e.g. to the food bowl) speed up so they never take more than a few seconds.
+    const duration = Math.min(MAX_WALK_MS, Math.max(250, (dist / WALK_SPEED) * 1000));
     this.startHopping();
     this.walkTween = this.scene.tweens.add({
       targets: this,

@@ -57,6 +57,7 @@ export function makeAnimal(state: SimState, overrides: Partial<Animal> = {}): An
     tricks: { known: [], progress: {}, nextTrainAt: now },
     nextPoopAt: now + 10 * MIN,
     nextWanderAt: now + 90 * SEC,
+    nextPetAt: now,
     ...overrides,
   };
 }

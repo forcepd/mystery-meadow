@@ -1,4 +1,4 @@
-import type { Animal, OfflineSummary, Visitor } from './types';
+import type { Animal, OfflineSummary, Poop, Visitor } from './types';
 
 /**
  * Events the sim emits for animations, toasts, and sounds. Payloads reference live sim
@@ -21,6 +21,14 @@ export type SimEvents = {
   gemsChanged: { gems: number; delta: number };
   crowdedChanged: { crowded: boolean };
   dexDiscovered: { key: string };
+  animalAte: { animal: Animal; bowlId: string };
+  bowlEmptied: { bowlId: string };
+  bowlRefilled: { bowlId: string };
+  treatGiven: { animal: Animal };
+  animalPetted: { animal: Animal };
+  poopAppeared: { poop: Poop; animalId: string };
+  poopCleaned: { poop: Poop };
+  animalRenamed: { animal: Animal };
   caughtUp: OfflineSummary;
   /** Something in the state may have changed (a tick ran or a command was called). */
   changed: undefined;

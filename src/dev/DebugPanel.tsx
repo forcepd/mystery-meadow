@@ -4,6 +4,7 @@ import {
   debugAddCoins,
   debugAddGems,
   debugRunOnline,
+  debugSetNeeds,
   debugSpawnVisitor,
   type DebugVisitorOptions,
 } from '../sim/debugCommands';
@@ -148,6 +149,16 @@ export default function DebugPanel() {
         </button>
         <button type="button" className={styles.small} onClick={() => debugAddGems(sim, 100)}>
           +100 💎
+        </button>
+      </div>
+
+      <div className={styles.row}>
+        <span>Needs</span>
+        <button type="button" className={styles.small} onClick={() => debugSetNeeds(sim, 10, 10)}>
+          😢 Neglect all
+        </button>
+        <button type="button" className={styles.small} onClick={() => debugSetNeeds(sim, 100, 100)}>
+          💖 Fill all
         </button>
       </div>
 

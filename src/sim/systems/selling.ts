@@ -3,20 +3,16 @@ import type { SimContext } from '../context';
 import type { Animal, CommandResult, Ms, WorldState } from '../types';
 import { isReadyToSell } from './animals';
 import { addCoins } from './economy';
+import { careMultiplier } from './needs';
 import { admitVisitors } from './visitors';
 
-/** Stubbed at 1.0. Phase 3 derives it from the animal's needs over the care window (0.8..1.3). */
-export function careMultiplier(): number {
-  return 1;
-}
-
 /** DESIGN 7.5. */
-export function salePrice(animal: Animal): number {
+export function salePrice(world: WorldState, animal: Animal): number {
   const { basePrice, sparkleMultiplier } = BALANCE.rarity;
   return Math.round(
     basePrice[animal.rarity] *
       (animal.isSparkle ? sparkleMultiplier : 1) *
-      careMultiplier() *
+      careMultiplier(world, animal) *
       (1 + BALANCE.tricks.salePriceBonusPerTrick * animal.tricks.known.length),
   );
 }
@@ -41,7 +37,7 @@ export function sell(ctx: SimContext, animalId: string, now: Ms): CommandResult 
   const check = canSell(animal, now);
   if (!check.ok) return check;
 
-  const price = salePrice(animal);
+  const price = salePrice(world, animal);
   world.animals = world.animals.filter((a) => a !== animal);
   // Outfits go back to the wardrobe.
   for (const itemId of Object.values(animal.outfit)) {

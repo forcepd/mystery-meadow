@@ -1,6 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const PORT = 4173;
+// Not vite preview's default (4173), so a preview you're running by hand is never reused.
+const PORT = 4317;
 
 export default defineConfig({
   testDir: 'tests/e2e',
