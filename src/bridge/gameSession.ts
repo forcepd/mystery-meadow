@@ -48,6 +48,11 @@ export class GameSession {
       'animalRenamed',
       'vetVisitStarted',
       'vetTreated',
+      // Pet moves: a stored pet must never reappear in the yard after a quick reload.
+      'petKept',
+      'petUnkept',
+      'petStored',
+      'petRetrieved',
     ] as const) {
       sim.events.on(event, () => void this.save());
     }

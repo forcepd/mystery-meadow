@@ -99,6 +99,20 @@
   font-weight: 800;
 }
 
+.actions .keep {
+  background: #ff8fb1;
+}
+
+.pair {
+  display: flex;
+  gap: 8px;
+}
+
+.pair > * {
+  flex: 1;
+  padding: 0 12px;
+}
+
 .actions .secondary {
   background: #f6c65b;
   box-shadow: 0 4px 0 #d49a2a;

@@ -67,3 +67,30 @@
   bottom: calc(8px + var(--safe-bottom));
   opacity: 0.7;
 }
+
+.heart {
+  color: #e0628b;
+}
+
+/* Menu buttons, bottom-left above the Privacy link. */
+.nav {
+  position: absolute;
+  left: calc(12px + var(--safe-left));
+  bottom: calc(44px + var(--safe-bottom));
+  display: flex;
+  gap: 10px;
+}
+
+.nav button {
+  font: inherit;
+  font-weight: 800;
+  font-size: 20px;
+  color: var(--color-ink);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.nav button:focus-visible {
+  outline: 4px solid var(--color-ink);
+  outline-offset: 2px;
+}

@@ -21,6 +21,11 @@ export type AppEvents = {
   closeVet: undefined;
   /** An exam tool was used on the patient in the clinic scene. */
   vetExamined: { animalId: string; toolId: string; result: ExamResult };
+  /**
+   * Opens a full-screen overlay (null closes it). `incomingId`: an animal being kept while
+   * every Pet Slot is full, so the Pets (Swap) screen asks where it goes.
+   */
+  openScreen: { screen: 'pets' | 'dex' | null; incomingId?: string };
   /** Which Phaser scene is showing. */
   sceneChanged: { scene: 'yard' | 'vet' };
 };

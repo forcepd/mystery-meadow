@@ -20,12 +20,20 @@ const BADGES: Record<Badge, { icon: string; label: string }> = {
   kept: { icon: '❤️', label: 'Kept' },
 };
 
-/** DESIGN 17.3 Animal Card (through Phase 4). Opens when an animal is tapped in the world. */
+/** DESIGN 17.3 Animal Card (through Phase 5). Opens when an animal is tapped in the world. */
 export function AnimalCard() {
   const { sim } = useSim();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [editingName, setEditingName] = useState(false);
+
+  // A full-screen overlay (Pets, Dex) takes over: close the card.
+  useAppEvent(
+    'openScreen',
+    useCallback(({ screen }) => {
+      if (screen) setSelectedId(null);
+    }, []),
+  );
 
   useAppEvent(
     'selectAnimal',
@@ -56,6 +64,15 @@ export function AnimalCard() {
   const illness = animal.sickness && getIllness(animal.sickness.illnessId);
   const clinicUntil = animal.sickness?.atClinicUntil;
   const close = () => appBus.emit('selectAnimal', { id: null });
+
+  /** Keep: into a free Pet Slot, or (all full) the Swap screen decides where it goes. */
+  const keep = () => {
+    if (sim.petSlots().free === 0) {
+      appBus.emit('openScreen', { screen: 'pets', incomingId: animal.id });
+      return;
+    }
+    act(() => sim.keep(animal.id));
+  };
 
   const goToVet = () => {
     const result = sim.goToVet(animal.id);
@@ -188,6 +205,28 @@ export function AnimalCard() {
 
       <div className={styles.actions}>
         {animal.sickness && <VetButton sim={sim} animal={animal} onPress={goToVet} />}
+        {animal.isKept ? (
+          <div className={styles.pair}>
+            <button
+              type="button"
+              className={`${common.button} ${styles.secondary}`}
+              onClick={() => act(() => sim.storePet(animal.id))}
+            >
+              <span aria-hidden="true">📦</span> Store
+            </button>
+            <button
+              type="button"
+              className={`${common.button} ${styles.secondary}`}
+              onClick={() => act(() => sim.unkeep(animal.id))}
+            >
+              <span aria-hidden="true">💔</span> Un-keep
+            </button>
+          </div>
+        ) : (
+          <button type="button" className={`${common.button} ${styles.keep}`} onClick={keep}>
+            <span aria-hidden="true">❤️</span> Keep as my pet
+          </button>
+        )}
         <button
           type="button"
           className={`${common.button} ${styles.secondary}`}

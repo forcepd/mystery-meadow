@@ -5,7 +5,7 @@ import type { GameSession } from '../../bridge/gameSession';
 import { HOUSE_COLORS } from '../../config/houseColors';
 import type { Vec2 } from '../../sim/types';
 import { Effects } from '../fx/effects';
-import { GATE_ENTRY, gateSlot, tileToWorld, yardToWorld } from '../layout';
+import { GATE_ENTRY, HOUSE_DOOR, gateSlot, tileToWorld, yardToWorld } from '../layout';
 import { AnimalSprite } from '../sprites/AnimalSprite';
 import { BowlSprite } from '../sprites/BowlSprite';
 import { drawHouse, drawYard } from '../sprites/drawYard';
@@ -38,6 +38,7 @@ export class YardScene extends Phaser.Scene {
   /** animalId -> where it should appear from (the gate, or its mother). */
   private readonly spawnFrom = new Map<string, { at: Vec2; kind: 'gate' | 'birth' }>();
   private readonly sold = new Map<string, number>();
+  private readonly stored = new Set<string>();
   private readonly leftGate = new Set<string>();
   private selectedId: string | null = null;
   private press: Press | null = null;
@@ -102,6 +103,11 @@ export class YardScene extends Phaser.Scene {
         this.fx.burst(at.x, at.y - 20, [0xffd84d, 0xff9fc4, 0xffffff]);
       }),
       events.on('animalSold', ({ animal, price }) => this.sold.set(animal.id, price)),
+      events.on('petStored', ({ animal }) => this.stored.add(animal.id)),
+      // Back from Storage: pops out of the house door.
+      events.on('petRetrieved', ({ animal }) =>
+        this.spawnFrom.set(animal.id, { at: HOUSE_DOOR, kind: 'birth' }),
+      ),
       events.on('animalPetted', ({ animal }) => {
         const s = this.animals.get(animal.id);
         if (s) this.fx.hearts(s.x, s.y - 80, 4);
@@ -256,6 +262,11 @@ export class YardScene extends Phaser.Scene {
       this.animals.delete(id);
       const price = this.sold.get(id);
       this.sold.delete(id);
+      if (this.stored.delete(id)) {
+        this.fx.floatText(sprite.x, sprite.y - 90, '📦 Resting', '#8b5a33', 26);
+        sprite.goodbye();
+        continue;
+      }
       if (price === undefined) {
         sprite.destroy();
         continue;

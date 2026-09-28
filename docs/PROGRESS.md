@@ -436,3 +436,85 @@ Everything short of that is verified locally: build, unit tests, and e2e on emul
 - Symptom animations are placeholders until the Phase 10 art pass.
 - Headless test browsers show some emoji gray (🪙) in screenshots only.
 - Real-device check still pending: dragging tools on an iPad, and the clinic panel on iPad mini.
+
+## Phase 5: Keeping, Pet Storage, and Collection (built 2026-09-27)
+
+### What was built
+
+**Sim (`src/sim/systems/keeping.ts`, `dex.ts`)**
+
+- **Slot and storage sizes:** Pet Slots = 2 + purchased, and Pet Storage = 20 + 10 × expansions (buying more is Phase 7).
+- **Keep and un-keep:**
+  - `keep` puts any animal (sick, pregnant, or a baby) in a free slot. With all slots full it's refused, and the UI opens the Swap screen.
+  - `unkeep` only works on a pet that is out; a stored pet has to come out first. The name is kept through all moves.
+  - Kept pets still can't be sold.
+- **Moving pets:**
+  - `storePet`: slot → Storage. A not-yet-kept animal can go straight there too, which keeps it. Storing frees capacity, so a visitor waiting at the gate walks in.
+  - `retrievePet`: Storage → a free slot. It needs a free slot and room under capacity ("Your house is full!"). The pet comes out in the yard by the house door.
+  - `swapPets`: a slot pet and a stored pet trade places. The count doesn't change, so it works even when the house is full.
+  - `keepBumping`: a new pet takes a slot and the bumped pet goes to Storage. It needs Storage space.
+- **Paused storage:**
+  - Stored pets aren't in `animals`, so they get no decay, poop, sickness, eating, births, or aging. Offline catch-up doesn't touch them either.
+  - On retrieval every timer shifts by (now − storedAt), using the existing `shiftAnimal`: hold, growth, pregnancy, poop, wander, petting, training, the Free Clinic wait, and immunities.
+  - A pet stored sick comes back sick, and a paid vet visit is still paid.
+- **Events:** `petKept`, `petUnkept`, `petStored`, `petRetrieved`. The game saves right after each one.
+- `dexProgress`: per species it tracks whether it's discovered, the variants found, and the Sparkle, plus totals.
+- **No save migration was needed:** every field already existed in the v1 schema.
+
+**UI**
+
+- **HUD:**
+  - A ♥ Pet Slots pill ("1/2").
+  - 🐾 Pets and 📖 Dex buttons, bottom-left.
+- **Animal Card:**
+  - ❤️ "Keep as my pet". With full slots it opens the Swap screen with this animal as the new pet.
+  - Kept pets get 📦 Store and 💔 Un-keep instead.
+- **Pets (Swap) screen:**
+  - Pet Slots on top, empty slots dashed, and a Storage grid with counts.
+  - Tap a pet, then tap where it goes, or drag it there. Drag uses pointer events, so it works with touch or a mouse.
+  - A "Keeping Newbie!" banner when a new pet arrives with the slots full.
+  - Friendly success and refusal messages.
+- **Animal Dex:**
+  - The species grouped by rarity, with a count of animals found and of colors and Sparkles found.
+  - Found species show their color, the name, variant dots (dashed for not found yet), and a Sparkle star.
+  - Undiscovered species show a silhouette, "???", and their rarity stars (your choice).
+- **Yard:** a pet going into Storage floats "📦 Resting" and fades out; a pet coming back pops out of the house door.
+- **Debug Panel:** no new controls. `debugAddStoredPets` fills Storage with random kept pets.
+
+**Tests**
+
+- **Unit:** 311 in total (30 new). They cover every DESIGN 10.1 rule, including:
+  - Keeping with full slots.
+  - Storing a sick pet: nothing progresses while stored, it comes out still sick, and the paid visit carries over.
+  - Retrieving with no room under capacity, or while Crowded, is refused, while a direct swap still works.
+  - Timers resume exactly after 30 days in storage (every timer is checked).
+  - A pregnant pet gives birth on schedule after coming out.
+  - Storage full, storing freeing capacity for a waiting visitor, un-keeping a stored pet refused, and names kept.
+  - Offline catch-up and save/reload leave stored pets untouched.
+  - Dex counts, and the save after storing.
+- **E2E:** 21 new runs (7 tests × 3 browser setups):
+  - Keep from the card.
+  - Keep with full slots: bump a pet, or send the new one straight to Storage.
+  - Drag a stored pet onto a slot pet to swap.
+  - Taking a pet out with the house full says "Your house is full!", and a swap still works.
+  - Storing a pet survives a reload.
+  - The Dex shows found animals and silhouettes.
+
+### Phase 5 "Done when"
+
+All DESIGN 10.1 rules are unit tested, including the four named cases: keeping with full slots, storing a sick pet, retrieving with no capacity, and timers resuming after long storage.
+
+### Defaults chosen (spec left open): please confirm or change
+
+1. **Keeping is free and instant.** Any animal can be kept, including sick, pregnant, and babies.
+2. **Swapping works even when the house is full**, because the animal count doesn't change. Only taking a pet out into an *empty* slot needs free capacity.
+3. **Pets come out of Storage into the yard by the house door.** Indoor placement arrives with the house in Phase 6.
+4. **A pregnant pet in Storage** stays pregnant, and the countdown resumes when it comes out.
+5. **The Dex hides names of undiscovered species**, showing a silhouette, "???", and rarity stars (your answer). Variant names show as tooltips only.
+6. **The Dex counts 21 species:** the Phase 0 roster question (21 vs 20) is still open.
+
+### Known issues
+
+- **Pet tiles use `touch-action: none` so dragging works on touch.** With a large Storage, scrolling starts from the gaps between tiles. Check it on a real iPad; if it's awkward, the fix is press-and-hold to start a drag.
+- Buying Pet Slots and Storage expansions arrives with the Real Estate shop in Phase 7.
+- Portraits are colored circles until the Phase 10 art pass.

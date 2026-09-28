@@ -90,6 +90,21 @@ describe('GameSession', () => {
     expect((await saved(store)).world.animals[0]!.sickness).toBeUndefined();
   });
 
+  it('saves right after a pet goes into Storage', async () => {
+    const { session, store } = await start();
+    debugSpawnVisitor(session.sim, { speciesId: 'bunny', pregnant: false });
+    session.sim.revealVisitor(session.sim.state.world.gateQueue[0]!.id);
+    const id = session.sim.state.world.animals[0]!.id;
+    await session.save();
+    const set = vi.spyOn(store, 'set');
+    session.sim.storePet(id); // Keeps it too: saves on petKept and petStored.
+    await session.save(); // Waits for the queued saves.
+    expect(set).toHaveBeenCalledTimes(3);
+    const file = await saved(store);
+    expect(file.world.animals).toHaveLength(0);
+    expect(file.world.petStorage[0]!.animal.id).toBe(id);
+  });
+
   it('saves when hidden and treats hidden time as offline when visible again', async () => {
     const { session, source, store } = await start();
     await session.hidden();

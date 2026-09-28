@@ -1,0 +1,31 @@
+.portrait {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  border-radius: 50%;
+  border: 4px solid #4a3b33;
+}
+
+.sparkle {
+  box-shadow:
+    0 0 0 3px #ffd84d,
+    0 0 12px 4px #ff8fd0;
+}
+
+.mark {
+  position: absolute;
+  right: -8px;
+  top: -8px;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.silhouette {
+  background: #4b4560;
+  border-color: #332e44;
+  color: #cfc9e8;
+  font-weight: 800;
+  font-size: 26px;
+}

@@ -32,6 +32,12 @@ export function gateSlot(index: number): Vec2 {
   return { x: q.x + index * q.stepX, y: q.y + index * q.stepY };
 }
 
+/** In front of the house door (pets back from Storage come out here). */
+export const HOUSE_DOOR: Vec2 = {
+  x: LAYOUT.house.x + LAYOUT.house.width / 2,
+  y: LAYOUT.house.y + LAYOUT.house.height + 60,
+};
+
 /** Where visitors step into the yard. */
 export const GATE_ENTRY: Vec2 = { x: LAYOUT.gate.x + LAYOUT.gate.width / 2, y: LAYOUT.fenceY + 40 };
 
