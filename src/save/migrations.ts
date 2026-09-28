@@ -42,6 +42,12 @@ export const MIGRATIONS: Readonly<Record<number, Migration>> = {
       },
     };
   },
+
+  /**
+   * v2 -> v3 (Phase 4, Health and Vet): `sickness` gains an optional `visit` (checked in at the
+   * vet). Nobody could get sick before v3, so there is nothing to fill in: only the version moves.
+   */
+  2: (save) => ({ ...save, schemaVersion: 3 }),
 };
 
 export class SaveError extends Error {

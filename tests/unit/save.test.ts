@@ -188,7 +188,7 @@ describe('migration v1 -> v2 (Phase 3)', () => {
 
   it('adds a petting timer to every animal, out or stored', () => {
     const out = migrate(v1Save());
-    expect(out.schemaVersion).toBe(2);
+    expect(out.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
     expect(out.world.animals[0]!.nextPetAt).toBe(out.meta.lastSeenAt);
     expect(out.world.petStorage[0]!.animal.nextPetAt).toBe(out.meta.lastSeenAt);
     expect(out.world.animals[0]!.nextPoopAt).toBe(5);
@@ -225,5 +225,36 @@ describe('migration v1 -> v2 (Phase 3)', () => {
     const sim = GameSim.fromState(toSimState(save), new FakeClock(save.meta.lastSeenAt));
     expect(sim.bowls()).toHaveLength(1);
     expect(sim.pet('a1').ok).toBe(true);
+  });
+});
+
+describe('migration v2 -> v3 (Phase 4)', () => {
+  /** A Phase 3 save with an animal out and one stored. */
+  function v2Save() {
+    const h = newSim();
+    const save = toSaveFile(profile, h.sim.toState());
+    const state = h.sim.toState();
+    save.world.animals = [makeAnimal(state, { id: 'a1', needs: { hunger: 30, happiness: 70 } })];
+    save.world.petStorage = [{ animal: makeAnimal(state, { id: 'a2' }), storedAt: 1 }];
+    return { ...save, schemaVersion: 2 };
+  }
+
+  it('only bumps the version: every animal and value is kept as it was', () => {
+    const before = v2Save();
+    const out = migrate(structuredClone(before));
+    expect(out.schemaVersion).toBe(3);
+    expect({ ...out, schemaVersion: 2 }).toEqual(before);
+  });
+
+  it('a migrated v2 save loads, and its animals can get sick and visit the vet', () => {
+    const save = migrate(v2Save());
+    const clock = new FakeClock(save.meta.lastSeenAt);
+    const sim = GameSim.fromState(toSimState(save), clock);
+    expect(sim.getAnimal('a1')!.sickness).toBeUndefined();
+    const state = sim.toState();
+    state.world.animals[0]!.sickness = { illnessId: 'sniffles', since: state.meta.lastSeenAt };
+    const sick = GameSim.fromState(state, clock);
+    expect(sick.goToVet('a1').ok).toBe(true);
+    expect(sick.vetTreat('a1', 'medicine_drops')).toMatchObject({ ok: true, cured: true });
   });
 });

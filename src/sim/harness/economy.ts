@@ -1,7 +1,9 @@
 import { BALANCE } from '../../config/balance';
+import { TREATMENTS, getIllness } from '../../config/illnesses';
 import { FakeClock } from '../clock';
 import { hours, minutes } from '../context';
 import { GameSim } from '../GameSim';
+import { Rng } from '../rng';
 import { RARITIES, type Rarity } from '../types';
 
 /**
@@ -10,6 +12,9 @@ import { RARITIES, type Rarity } from '../types';
  *
  * - `caring` (default): also refills empty bowls, cleans every poop, and pets sad animals.
  * - `neglect`: never refills, cleans, or pets.
+ *
+ * Both take sick animals to the vet right away (otherwise they could never sell them). At the
+ * vet the bot sometimes tries one wrong treatment first, like a kid still learning the clues.
  */
 export type BotStyle = 'caring' | 'neglect';
 
@@ -19,6 +24,8 @@ export interface EconomyOptions {
   bot?: BotStyle;
   /** Seconds between bot actions. The sim itself always runs 1-second ticks. */
   botIntervalSeconds?: number;
+  /** Chance the bot tries one wrong treatment before the right one. Default 0.25. */
+  wrongGuessChance?: number;
 }
 
 export interface EconomyReport {
@@ -41,6 +48,12 @@ export interface EconomyReport {
   hoursToAfford: Record<string, number | null>;
   minutesCrowded: number;
   finalAnimals: number;
+  /** DESIGN 22: sickness frequency. */
+  sickCases: number;
+  sickPerHour: number;
+  freeClinicVisits: number;
+  /** Visit fees plus treatments. */
+  vetCoinsSpent: number;
 }
 
 export function runEconomy(options: EconomyOptions): EconomyReport {
@@ -56,7 +69,12 @@ export function runEconomy(options: EconomyOptions): EconomyReport {
   const sold = Object.fromEntries(RARITIES.map((r) => [r, 0])) as Record<Rarity, number>;
   const hoursToAfford: Record<string, number | null> = {};
   for (const tier of BALANCE.houseTiers.slice(1)) hoursToAfford[tier.id] = null;
+  const guessRng = new Rng(options.seed ^ 0x5eed);
+  const wrongGuessChance = options.wrongGuessChance ?? 0.25;
   const report = {
+    sickCases: 0,
+    freeClinicVisits: 0,
+    vetCoinsSpent: 0,
     visitorsArrived: 0,
     visitorsEntered: 0,
     visitorsLeftAtGate: 0,
@@ -76,6 +94,12 @@ export function runEconomy(options: EconomyOptions): EconomyReport {
     report.births++;
     report.babies += babies.length;
   });
+  sim.events.on('animalSick', () => report.sickCases++);
+  sim.events.on('vetVisitStarted', ({ free, fee }) => {
+    if (free) report.freeClinicVisits++;
+    report.vetCoinsSpent += fee;
+  });
+  sim.events.on('vetTreated', ({ cost }) => (report.vetCoinsSpent += cost));
   sim.events.on('animalSold', ({ animal, price }) => {
     sold[animal.rarity]++;
     if (animal.isSparkle) report.sparklesSold++;
@@ -102,6 +126,9 @@ export function runEconomy(options: EconomyOptions): EconomyReport {
       }
     }
     for (const animal of [...sim.state.world.animals]) {
+      if (animal.sickness) visitVet(sim, animal.id, guessRng, wrongGuessChance);
+    }
+    for (const animal of [...sim.state.world.animals]) {
       if (!sim.canSell(animal.id).ok) continue;
       careSum += sim.careMultiplier(animal.id) ?? 1;
       careCount++;
@@ -121,7 +148,20 @@ export function runEconomy(options: EconomyOptions): EconomyReport {
     hoursToAfford,
     minutesCrowded: Math.round(crowdedMs / minutes(1)),
     finalAnimals: sim.animalCount(),
+    sickPerHour: Math.round((report.sickCases / options.hours) * 10) / 10,
   };
+}
+
+/** Checks in, then treats: the right treatment, maybe after one wrong guess. */
+function visitVet(sim: GameSim, animalId: string, rng: Rng, wrongGuessChance: number): void {
+  if (!sim.goToVet(animalId).ok || sim.isWaitingAtClinic(animalId)) return;
+  const illness = getIllness(sim.getAnimal(animalId)?.sickness?.illnessId ?? '');
+  if (!illness) return;
+  if (rng.chance(wrongGuessChance)) {
+    const wrong = TREATMENTS.filter((t) => t.id !== illness.treatmentId);
+    sim.vetTreat(animalId, rng.pick(wrong).id);
+  }
+  sim.vetTreat(animalId, illness.treatmentId);
 }
 
 export function formatEconomyReport(r: EconomyReport, runtimeMs?: number): string {
@@ -139,6 +179,8 @@ export function formatEconomyReport(r: EconomyReport, runtimeMs?: number): strin
     `  Coins earned: ${r.coinsEarned} (${r.coinsPerHour}/hour), average care x${r.avgCareMultiplier}`,
     `  Earnings reach: ${afford}`,
     `  Time crowded: ${r.minutesCrowded} min; animals at end: ${r.finalAnimals}`,
+    `  Sickness: ${r.sickCases} cases (${r.sickPerHour}/hour), ${r.freeClinicVisits} Free Clinic, ` +
+      `${r.vetCoinsSpent} coins at the vet`,
     ...(runtimeMs === undefined ? [] : [`  Simulated in ${Math.round(runtimeMs)} ms`]),
   ].join('\n');
 }

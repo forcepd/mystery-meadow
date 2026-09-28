@@ -36,7 +36,7 @@ export interface Animal {
   position: Vec2;
   needs: { hunger: number; happiness: number };
   careHistory: number[];
-  sickness?: { illnessId: string; since: Ms; atClinicUntil?: Ms };
+  sickness?: Sickness;
   /** illnessId -> immune until. */
   immunities: Record<string, Ms>;
   isKept: boolean;
@@ -46,6 +46,19 @@ export interface Animal {
   nextWanderAt: Ms;
   /** Petting cooldown ends (DESIGN 8.4). Added in save v2. */
   nextPetAt: Ms;
+}
+
+/** DESIGN 9. */
+export interface Sickness {
+  illnessId: string;
+  since: Ms;
+  /** Free Clinic: waiting to see the vet until this time. Cleared when the wait is over. */
+  atClinicUntil?: Ms;
+  /**
+   * Set once checked in at the vet (save v3), so leaving the clinic never charges twice.
+   * `free` = Free Clinic: the visit and its treatments cost nothing.
+   */
+  visit?: 'paid' | 'free';
 }
 
 /** Kept pet in Pet Storage (paused). On retrieval, timestamps shift by (now - storedAt). */

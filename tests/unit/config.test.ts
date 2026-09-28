@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { BALANCE } from '../../src/config/balance';
 import { HOUSE_COLORS, DEFAULT_HOUSE_COLOR } from '../../src/config/houseColors';
+import { EXAM_TOOLS, ILLNESSES, TREATMENTS, getTreatment } from '../../src/config/illnesses';
 import { ITEMS, getItem } from '../../src/config/items';
 import { SPECIES, getSpecies } from '../../src/config/species';
 import { RARITIES } from '../../src/sim/types';
@@ -148,5 +149,59 @@ describe('HOUSE_COLORS', () => {
     expect(new Set(HOUSE_COLORS.map((c) => c.id)).size).toBe(8);
     for (const c of HOUSE_COLORS) expect(c.color).toMatch(/^#[0-9a-f]{6}$/i);
     expect(HOUSE_COLORS.map((c) => c.id)).toContain(DEFAULT_HOUSE_COLOR);
+  });
+});
+
+describe('illnesses, exam tools, and treatments (DESIGN 9.4)', () => {
+  it('has the six starter illnesses, each cured by its own cabinet treatment', () => {
+    expect(ILLNESSES.map((i) => i.name)).toEqual([
+      'Sniffles',
+      'Tummy Trouble',
+      'Itchy Fleas',
+      'Sore Paw',
+      'Spotty Fever',
+      'Sleepy Sickness',
+    ]);
+    expect(TREATMENTS).toHaveLength(6);
+    const cures = ILLNESSES.map((i) => i.treatmentId);
+    expect(new Set(cures).size).toBe(ILLNESSES.length);
+    for (const id of cures) expect(getTreatment(id)).toBeDefined();
+  });
+
+  it('ids are unique and every illness has a symptom icon and text', () => {
+    for (const list of [ILLNESSES, TREATMENTS, EXAM_TOOLS]) {
+      expect(new Set(list.map((x) => x.id)).size).toBe(list.length);
+    }
+    for (const i of ILLNESSES) {
+      expect(i.symptomIcon).not.toBe('');
+      expect(i.symptoms).not.toBe('');
+    }
+  });
+
+  it('every tool reveals at least one clue for every illness', () => {
+    for (const i of ILLNESSES) {
+      expect(Object.keys(i.clues).sort()).toEqual(EXAM_TOOLS.map((t) => t.id).sort());
+      for (const tool of EXAM_TOOLS) expect(i.clues[tool.id]!.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('no two illnesses look the same through all three tools', () => {
+    const signature = (i: (typeof ILLNESSES)[number]) =>
+      EXAM_TOOLS.map((t) => i.clues[t.id]!.map((c) => c.text).join('|')).join('#');
+    expect(new Set(ILLNESSES.map(signature)).size).toBe(ILLNESSES.length);
+  });
+
+  it('sickness and vet tunables match DESIGN 15', () => {
+    expect(BALANCE.vet).toEqual({ visitFee: 20, treatmentCost: 10, freeClinicWaitMinutes: 3 });
+    expect(BALANCE.sickness).toMatchObject({
+      baseChancePerMinute: 0.002,
+      lowHungerMultiplier: 2,
+      poopThreshold: 3,
+      poopMultiplier: 2,
+      lowHappinessMultiplier: 1.5,
+      contagionPerSickPerMinute: 0.01,
+      immunityMinutes: 30,
+      sickHappinessDrainMultiplier: 2,
+    });
   });
 });

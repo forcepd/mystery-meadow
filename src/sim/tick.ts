@@ -5,7 +5,9 @@ import { tickLifecycle } from './systems/lifecycle';
 import { tickCareSamples, tickNeeds } from './systems/needs';
 import { tickPoop } from './systems/poop';
 import { tickBirths } from './systems/pregnancy';
+import { tickSickness } from './systems/sickness';
 import { shiftWorld } from './systems/timeShift';
+import { tickClinic } from './systems/vet';
 import { refreshGateTimers, tickGate, tickVisitorTimer } from './systems/visitors';
 import { tickWander } from './systems/wander';
 import type { Ms, OfflineSummary } from './types';
@@ -20,6 +22,8 @@ export function runTick(ctx: SimContext, t: Ms): void {
   tickNeeds(ctx, t - prev);
   tickFeeding(ctx);
   tickPoop(ctx, t);
+  tickClinic(ctx, t);
+  tickSickness(ctx, t);
   tickCareSamples(ctx, t);
   tickVisitorTimer(ctx, t);
   tickGate(ctx, t);
@@ -40,7 +44,7 @@ export function runOnline(ctx: SimContext, now: Ms): void {
 
 /**
  * DESIGN 14: offline catch-up. Visitors queue at the gate, pregnancies, births, hold timers and
- * growth progress; needs, poop, and sickness don't (those systems skip offline ticks).
+ * growth progress (and Free Clinic waits); needs, poop, and sickness don't (those systems skip offline ticks).
  * Only the last maxCatchUpHours are simulated (none if offline progress is off): the rest is
  * paused time, so every timer is shifted past it.
  */

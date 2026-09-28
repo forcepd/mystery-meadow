@@ -29,6 +29,14 @@ export type SimEvents = {
   poopAppeared: { poop: Poop; animalId: string };
   poopCleaned: { poop: Poop };
   animalRenamed: { animal: Animal };
+  animalSick: { animal: Animal; illnessId: string };
+  /** Checked in at the vet (`free` = Free Clinic, which starts with a wait). */
+  vetVisitStarted: { animal: Animal; free: boolean; fee: number };
+  /** The Free Clinic wait is over: the vet can see the animal now. */
+  clinicReady: { animal: Animal };
+  /** A treatment was given (`cost` may be 0). `cured` is false for the wrong treatment. */
+  vetTreated: { animal: Animal; treatmentId: string; cost: number; cured: boolean };
+  animalCured: { animal: Animal; illnessId: string };
   caughtUp: OfflineSummary;
   /** Something in the state may have changed (a tick ran or a command was called). */
   changed: undefined;

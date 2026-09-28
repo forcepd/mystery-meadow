@@ -1,7 +1,9 @@
+import { ILLNESSES } from '../config/illnesses';
 import { SPECIES, getSpecies } from '../config/species';
 import type { GameSim } from './GameSim';
 import { addCoins, addGems } from './systems/economy';
 import { rollLitterSize, rollVisitor } from './systems/rarity';
+import { makeSick } from './systems/sickness';
 import { spawnVisitor } from './systems/visitors';
 import { runOnline } from './tick';
 import type { CommandResult, Rarity, VisitorRoll } from './types';
@@ -69,5 +71,40 @@ export function debugRunOnline(sim: GameSim): void {
 export function debugSetNeeds(sim: GameSim, hunger: number, happiness: number): void {
   sim.debugRun((ctx) => {
     for (const a of ctx.state.world.animals) a.needs = { hunger, happiness };
+  });
+}
+
+/**
+ * Makes healthy animals sick with `illnessId` (or a random illness): just one (the first
+ * healthy one, or `animalId`) or all of them. Returns how many got sick.
+ */
+export function debugMakeSick(
+  sim: GameSim,
+  opts: { illnessId?: string; all?: boolean; animalId?: string } = {},
+): number {
+  return sim.debugRun((ctx) => {
+    const now = ctx.state.meta.lastSeenAt;
+    const healthy = ctx.state.world.animals.filter(
+      (a) => !a.sickness && (!opts.animalId || a.id === opts.animalId),
+    );
+    const targets = opts.all ? healthy : healthy.slice(0, 1);
+    for (const animal of targets) {
+      makeSick(ctx, animal, opts.illnessId ?? ctx.rng.pick(ILLNESSES).id, now);
+    }
+    return targets.length;
+  });
+}
+
+/** Cures every animal instantly (no immunity, no vet). */
+export function debugCureAll(sim: GameSim): void {
+  sim.debugRun((ctx) => {
+    for (const a of ctx.state.world.animals) delete a.sickness;
+  });
+}
+
+/** The parent setting (Parent Mode arrives in Phase 8). */
+export function debugSetSicknessEnabled(sim: GameSim, enabled: boolean): void {
+  sim.debugRun((ctx) => {
+    ctx.state.world.settings.sicknessEnabled = enabled;
   });
 }

@@ -77,8 +77,16 @@ export const BALANCE = deepFreeze({
     contagionPerSickPerMinute: 0.01,
     immunityMinutes: 30,
     sickHappinessDrainMultiplier: 2,
+    // DESIGN 9.1 "hunger < 25" and "happiness < 25".
+    lowHungerBelow: 25,
+    lowHappinessBelow: 25,
+    // DESIGN 9.1: every simulated minute each healthy animal rolls once.
+    rollSeconds: 60,
   },
 
+  // DESIGN 9.5. [DEFAULT, Phase 4] Free Clinic: if coins < visitFee + treatmentCost at check-in,
+  // the visit and its treatments are free after freeClinicWaitMinutes. On a paid visit, a
+  // treatment you can't afford is free too, so the game can never get stuck.
   vet: { visitFee: 20, treatmentCost: 10, freeClinicWaitMinutes: 3 },
 
   // careMultiplier maps the average of hunger, happiness and zone cleanliness over the last

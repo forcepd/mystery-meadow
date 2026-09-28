@@ -23,10 +23,12 @@ describe('visitor timer (DESIGN 6.1)', () => {
 
   it('keeps a steady schedule', () => {
     const h = newSim();
-    const arrived = vi.fn();
-    h.sim.events.on('visitorArrived', arrived);
+    const fired = vi.fn();
+    // The timer fires on schedule; if babies made the yard Crowded, that visit is skipped.
+    h.sim.events.on('visitorArrived', fired);
+    h.sim.events.on('visitorSkipped', fired);
     play(h, 5 * INTERVAL);
-    expect(arrived).toHaveBeenCalledTimes(5);
+    expect(fired).toHaveBeenCalledTimes(5);
     expect(h.sim.state.world.nextVisitorAt).toBe(START + 6 * INTERVAL);
   });
 

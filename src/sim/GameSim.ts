@@ -20,6 +20,19 @@ import { renameAnimal } from './systems/naming';
 import { careMultiplier, cleanliness } from './systems/needs';
 import { pet } from './systems/petting';
 import { cleanPoop } from './systems/poop';
+import { sickChance } from './systems/sickness';
+import { canTrain } from './systems/tricks';
+import {
+  examine,
+  goToVet,
+  isWaitingAtClinic,
+  treatmentCost,
+  vetQuote,
+  vetTreat,
+  type ExamResult,
+  type VetQuote,
+  type VetTreatResult,
+} from './systems/vet';
 import { canSell, findAnimal, salePrice, sell } from './systems/selling';
 import { revealVisitor } from './systems/visitors';
 import { runOffline, runOnline } from './tick';
@@ -195,6 +208,25 @@ export class GameSim {
     return this.command(() => renameAnimal(this.ctx, animalId, name));
   }
 
+  /** "Go to Vet": checks in (pays the fee, or starts the Free Clinic wait). Free if already in. */
+  goToVet(animalId: string): CommandResult {
+    return this.command(() => goToVet(this.ctx, animalId, this.now()));
+  }
+
+  /** Uses an exam tool at the vet: returns the clues it reveals. */
+  vetExamine(animalId: string, toolId: string): ExamResult {
+    this.update();
+    return examine(this.ctx.state.world, animalId, toolId);
+  }
+
+  /** Gives a treatment at the vet. `cured` is false for the wrong one (coins are still spent). */
+  vetTreat(animalId: string, treatmentId: string): VetTreatResult {
+    this.update();
+    const result = vetTreat(this.ctx, animalId, treatmentId, this.now());
+    this.afterChange(true);
+    return result;
+  }
+
   // ---- Queries ----------------------------------------------------------------------------
 
   getAnimal(id: string): Readonly<Animal> | undefined {
@@ -243,6 +275,35 @@ export class GameSim {
   /** Zone cleanliness 0..100. */
   cleanliness(zone: Zone): number {
     return cleanliness(this.ctx.state.world, zone);
+  }
+
+  /** What "Go to Vet" costs right now (or whether it's the Free Clinic). */
+  vetQuote(): VetQuote {
+    return vetQuote(this.ctx.state.world);
+  }
+
+  /** What the next treatment costs this animal (0 at the Free Clinic or when you're short). */
+  treatmentCost(animalId: string): number | undefined {
+    const animal = findAnimal(this.ctx.state.world, animalId);
+    return animal && treatmentCost(this.ctx.state.world, animal);
+  }
+
+  /** Waiting for the Free Clinic vet. */
+  isWaitingAtClinic(animalId: string): boolean {
+    const animal = findAnimal(this.ctx.state.world, animalId);
+    return animal !== undefined && isWaitingAtClinic(animal);
+  }
+
+  /** DESIGN 9.1 chance of getting sick this minute (for dev tools and tests). */
+  sickChance(animalId: string): number | undefined {
+    const animal = findAnimal(this.ctx.state.world, animalId);
+    return animal && sickChance(this.ctx.state.world, animal);
+  }
+
+  canTrain(animalId: string): CommandResult {
+    const animal = this.getAnimal(animalId);
+    if (!animal) return { ok: false, reason: "Can't find that animal." };
+    return canTrain(animal);
   }
 
   bowls(): readonly PlacedItem[] {

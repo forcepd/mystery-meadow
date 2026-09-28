@@ -100,4 +100,15 @@ describe('economy harness (DESIGN 21, Phase 1 done-when)', () => {
     expect(neglect.coins).toBeGreaterThan(380);
     expect(caring.coins).toBeLessThan(750);
   });
+
+  it('reports sickness: neglected animals get sick more often', () => {
+    const sickCases = (bot: 'caring' | 'neglect') => {
+      let sick = 0;
+      for (let seed = 1; seed <= 6; seed++) sick += runEconomy({ hours: 12, seed, bot }).sickCases;
+      return sick;
+    };
+    const caring = sickCases('caring');
+    expect(caring).toBeGreaterThan(0);
+    expect(sickCases('neglect')).toBeGreaterThan(caring * 1.3);
+  });
 });

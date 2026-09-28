@@ -2,7 +2,10 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   debugAddCoins,
   debugAddGems,
+  debugCureAll,
+  debugMakeSick,
   debugRunOnline,
+  debugSetSicknessEnabled,
   debugSpawnVisitor,
 } from '../../../src/sim/debugCommands';
 import { BALANCE } from '../../../src/config/balance';
@@ -76,5 +79,18 @@ describe('debug commands', () => {
     const settled = h.sim.state.world.gateQueue.filter((v) => h.sim.now() >= v.autoRevealAt);
     expect(settled.every((v) => v.revealed)).toBe(true);
     expect(h.sim.now()).toBe(START + 60 * MIN);
+  });
+
+  it('makes one or all animals sick, cures all, and toggles sickness', () => {
+    const h = edit(newSim(), (s) => fillAnimals(s, 3));
+    expect(debugMakeSick(h.sim, { illnessId: 'sore_paw' })).toBe(1);
+    const sick = () => h.sim.state.world.animals.filter((a) => a.sickness);
+    expect(sick().map((a) => a.sickness!.illnessId)).toEqual(['sore_paw']);
+    expect(debugMakeSick(h.sim, { all: true })).toBe(2);
+    expect(sick()).toHaveLength(3);
+    debugCureAll(h.sim);
+    expect(sick()).toHaveLength(0);
+    debugSetSicknessEnabled(h.sim, false);
+    expect(h.sim.state.world.settings.sicknessEnabled).toBe(false);
   });
 });
