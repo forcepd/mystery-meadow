@@ -1,4 +1,12 @@
-import type { Animal, OfflineSummary, PlacedItem, Poop, Visitor, Zone } from './types';
+import type {
+  Animal,
+  GameSettings,
+  OfflineSummary,
+  PlacedItem,
+  Poop,
+  Visitor,
+  Zone,
+} from './types';
 
 /**
  * Events the sim emits for animations, toasts, and sounds. Payloads reference live sim
@@ -60,6 +68,10 @@ export type SimEvents = {
   surfaceApplied: { itemId: string };
   /** Moved up to the next house tier (DESIGN 12.1). */
   houseUpgraded: { tierId: string };
+  /** A grown-up gave gems in Parent Mode. */
+  gemsGranted: { amount: number };
+  /** Parent Mode changed a setting. */
+  settingsChanged: { settings: GameSettings };
   /** A Real Estate purchase other than a house upgrade. */
   realEstateBought: { kind: 'room' | 'petSlot' | 'storage' | 'color' };
   caughtUp: OfflineSummary;

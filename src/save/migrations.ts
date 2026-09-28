@@ -64,6 +64,40 @@ export const MIGRATIONS: Readonly<Record<number, Migration>> = {
       },
     };
   },
+
+  /**
+   * v4 -> v5 (Phase 8, Profiles): the profile gets an avatar (the starter outfit), owned
+   * Boutique items, 3 empty outfit slots, and a finished tutorial (it's an existing player).
+   * The save gets an empty activity log. Literal values on purpose (see v1 -> v2).
+   */
+  4: (save) => {
+    const profile = save.profile as Record<string, unknown>;
+    return {
+      ...save,
+      schemaVersion: 5,
+      profile: {
+        avatar: {
+          bodyShape: 'body_regular',
+          skinTone: 'skin_3',
+          eyes: 'eyes_round',
+          brows: 'brows_soft',
+          mouth: 'mouth_smile',
+          hairStyle: 'hair_short',
+          hairColor: 'haircolor_brown',
+          makeup: {},
+          top: 'top_tee_blue',
+          bottom: 'bottom_jeans',
+          shoes: 'shoes_sneakers',
+          accessories: [],
+        },
+        ownedAvatarItems: [],
+        savedOutfits: [null, null, null],
+        tutorial: 'done',
+        ...profile,
+      },
+      activity: [],
+    };
+  },
 };
 
 export class SaveError extends Error {
@@ -122,6 +156,10 @@ function validate(
   const ok =
     isRecord(profile) &&
     typeof profile.id === 'string' &&
+    typeof profile.username === 'string' &&
+    isRecord(profile.avatar) &&
+    Array.isArray(profile.ownedAvatarItems) &&
+    Array.isArray(save.activity) &&
     isRecord(world) &&
     typeof world.coins === 'number' &&
     typeof world.gems === 'number' &&

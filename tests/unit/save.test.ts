@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { FakeClock } from '../../src/sim/clock';
+import { DEFAULT_PROFILE } from '../../src/bridge/gameSession';
+import { isValidLoadout } from '../../src/profile/avatar';
 import { GameSim } from '../../src/sim/GameSim';
 import { MemoryStore, SaveManager } from '../../src/save/SaveManager';
 import { MIGRATIONS, SaveError, migrate, type Migration } from '../../src/save/migrations';
@@ -11,7 +13,7 @@ import {
 } from '../../src/save/schema';
 import { HOUR, MIN, SEC, START, makeAnimal, newSim, play } from './sim/helpers';
 
-const profile = { id: 'p1', username: 'Sunny_Fox' };
+const profile = { ...DEFAULT_PROFILE, id: 'p1', username: 'Sunny_Fox' };
 
 /** A bot that taps visitors and sells whatever it can. Exercises the RNG. */
 function botStep(sim: GameSim): void {
@@ -73,8 +75,8 @@ describe('save round-trip', () => {
   it('keeps profiles separate and lists them', async () => {
     const manager = new SaveManager(new MemoryStore());
     const h = newSim();
-    await manager.save(toSaveFile({ id: 'a', username: 'A' }, h.sim.toState()));
-    await manager.save(toSaveFile({ id: 'b', username: 'B' }, h.sim.toState()));
+    await manager.save(toSaveFile({ ...profile, id: 'a', username: 'A' }, h.sim.toState()));
+    await manager.save(toSaveFile({ ...profile, id: 'b', username: 'B' }, h.sim.toState()));
     expect((await manager.listProfileIds()).sort()).toEqual(['a', 'b']);
     await manager.delete('a');
     expect(await manager.listProfileIds()).toEqual(['b']);
@@ -274,7 +276,7 @@ describe('migration v3 -> v4 (Phase 6)', () => {
 
   it('gives the house the free starter wallpaper and flooring, keeping everything else', () => {
     const out = migrate(v3Save());
-    expect(out.schemaVersion).toBe(4);
+    expect(out.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
     expect(out.world.house).toMatchObject({
       wallpaperId: 'wallpaper_cream',
       flooringId: 'flooring_wood',
@@ -290,5 +292,34 @@ describe('migration v3 -> v4 (Phase 6)', () => {
     expect(sim.buyItem('bed_basic').ok).toBe(true);
     expect(sim.placeItem('bed_basic', 'house', { x: 0, y: 0 }).ok).toBe(true);
     expect(sim.indoorSlots()).toEqual({ total: 1, used: 0 });
+  });
+});
+
+describe('migration v4 -> v5 (Phase 8)', () => {
+  /** A Phase 6/7 save: the profile is just an id and a username; no activity log. */
+  function v4Save() {
+    const save = toSaveFile(profile, newSim().sim.toState()) as unknown as Record<string, unknown>;
+    delete save.activity;
+    return { ...save, schemaVersion: 4, profile: { id: 'p1', username: 'Sunny_Fox' } };
+  }
+
+  it('gives the profile the starter avatar, empty outfits, a finished tutorial, and a log', () => {
+    const out = migrate(v4Save());
+    expect(out.schemaVersion).toBe(5);
+    expect(out.profile).toEqual({ ...DEFAULT_PROFILE, id: 'p1', username: 'Sunny_Fox' });
+    expect(out.activity).toEqual([]);
+  });
+
+  it('the default avatar in the migration is a valid starter outfit', () => {
+    const out = migrate(v4Save());
+    expect(isValidLoadout(out.profile.avatar, [])).toBe(true);
+  });
+
+  it('refuses a v5 save whose profile has no avatar', () => {
+    const bad = {
+      ...toSaveFile(profile, newSim().sim.toState()),
+      profile: { id: 'x', username: 'X' },
+    };
+    expect(() => migrate(bad)).toThrow(SaveError);
   });
 });

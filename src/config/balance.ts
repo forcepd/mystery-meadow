@@ -128,6 +128,15 @@ export const BALANCE = deepFreeze({
 
   houseColorChangeCost: 50,
 
+  // DESIGN 5, 13.3, 20. [DEFAULT, Phase 8] Profiles, the Parent PIN, gem grants, activity log.
+  profiles: { usernameMin: 3, usernameMax: 16, savedOutfits: 3, activityLogSize: 50 },
+  pin: { digits: 4 },
+  gems: { grantPresets: [10, 50, 100], maxGrant: 500 },
+
+  // DESIGN 5 step 4. [DEFAULT, Phase 8] The tutorial's first visitor arrives hungry (next to an
+  // empty bowl, so the kid fills it) and poops soon, so every step happens in a minute or two.
+  tutorial: { visitorHunger: 40, firstPoopSeconds: 20 },
+
   // Helpers (items.ts has their prices). [DEFAULT, Phase 7] Once a minute, online only: Scoop
   // Bot cleans the oldest yard poop (DESIGN 8.3), and Auto-Feeder refills every empty bowl.
   helpers: { scoopEverySeconds: 60, feedEverySeconds: 60 },

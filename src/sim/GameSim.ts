@@ -1,5 +1,5 @@
 import { BALANCE } from '../config/balance';
-import { DEFAULT_HOUSE_COLOR } from '../config/houseColors';
+import { DEFAULT_HOUSE_COLOR, HOUSE_COLORS } from '../config/houseColors';
 import { DEFAULT_FLOORING, DEFAULT_WALLPAPER } from '../config/items';
 import { STARTING_ITEMS } from '../config/yard';
 import type { Clock } from './clock';
@@ -50,6 +50,7 @@ import {
   type Tile,
 } from './systems/placement';
 import { cleanPoop } from './systems/poop';
+import { grantGems, spendGems } from './systems/gems';
 import {
   buyPetSlot,
   buyRoomExpansion,
@@ -86,6 +87,7 @@ import { runOffline, runOnline } from './tick';
 import type {
   Animal,
   CommandResult,
+  GameSettings,
   Ms,
   OfflineSummary,
   PlacedItem,
@@ -98,6 +100,13 @@ export type Badge = 'new' | 'pregnant' | 'baby' | 'sick' | 'readyToSell' | 'kept
 export interface NewGameOptions {
   clock: Clock;
   seed: number;
+  /** Exterior color picked in onboarding (DESIGN 5 step 3). */
+  houseColor?: string;
+  /**
+   * A new player (DESIGN 5 step 4): the first visitor arrives right away instead of after the
+   * usual interval, and the starting bowl is empty so the tutorial can teach filling it.
+   */
+  tutorial?: boolean;
 }
 
 /**
@@ -127,7 +136,7 @@ export class GameSim {
     this.crowded = isCrowded(state.world);
   }
 
-  static newGame({ clock, seed }: NewGameOptions): GameSim {
+  static newGame({ clock, seed, houseColor, tutorial }: NewGameOptions): GameSim {
     const now = clock.now();
     const rng = new Rng(seed);
     const cottage = BALANCE.houseTiers[0];
@@ -137,7 +146,10 @@ export class GameSim {
         gems: BALANCE.startingGems,
         house: {
           tierId: cottage.id,
-          exteriorColor: DEFAULT_HOUSE_COLOR,
+          exteriorColor:
+            houseColor && HOUSE_COLORS.some((c) => c.id === houseColor)
+              ? houseColor
+              : DEFAULT_HOUSE_COLOR,
           roomExpansions: 0,
           petSlotsPurchased: 0,
           storageExpansions: 0,
@@ -150,7 +162,7 @@ export class GameSim {
         petStorage: [],
         gateQueue: [],
         poops: [],
-        nextVisitorAt: now + minutes(cottage.visitorMinutes),
+        nextVisitorAt: tutorial ? now : now + minutes(cottage.visitorMinutes),
         discoveredDex: [],
         settings: {
           offlineProgress: true,
@@ -176,7 +188,9 @@ export class GameSim {
       zone: item.zone,
       tile: { ...item.tile },
       rotation: 0,
-      ...(item.itemId === 'food_bowl' ? { servings: BALANCE.needs.bowlServings } : {}),
+      ...(item.itemId === 'food_bowl'
+        ? { servings: tutorial ? 0 : BALANCE.needs.bowlServings }
+        : {}),
     }));
     return new GameSim(clock, state);
   }
@@ -366,6 +380,40 @@ export class GameSim {
   /** Repaint the house (costs coins; free as part of an upgrade). */
   changeHouseColor(colorId: string): CommandResult {
     return this.command(() => changeHouseColor(this.ctx, colorId));
+  }
+
+  /** Boutique purchases (DESIGN 4: gems buy avatar items). */
+  spendGems(amount: number): CommandResult {
+    return this.command(() => spendGems(this.ctx, amount));
+  }
+
+  /** Parent Mode (DESIGN 20). Check the Parent PIN before calling. */
+  grantGems(amount: number): CommandResult {
+    return this.command(() => grantGems(this.ctx, amount));
+  }
+
+  /** Parent Mode settings (offline progress, sickness, daily trick gem cap, reduced motion...). */
+  updateSettings(changes: Partial<GameSettings>): CommandResult {
+    return this.command(() => {
+      Object.assign(this.ctx.state.world.settings, changes);
+      this.ctx.emit('settingsChanged', { settings: this.ctx.state.world.settings });
+      return { ok: true };
+    });
+  }
+
+  /**
+   * Tutorial (DESIGN 5 step 4): the first visitor is a little hungry (so filling the empty bowl
+   * feeds it) and will poop soon (so there's one to clean). Only ever makes things sooner.
+   */
+  tutorialNudge(animalId: string): CommandResult {
+    return this.command(() => {
+      const animal = findAnimal(this.ctx.state.world, animalId);
+      if (!animal) return { ok: false, reason: "Can't find that animal." };
+      const { visitorHunger, firstPoopSeconds } = BALANCE.tutorial;
+      animal.needs.hunger = Math.min(animal.needs.hunger, visitorHunger);
+      animal.nextPoopAt = Math.min(animal.nextPoopAt, this.now() + seconds(firstPoopSeconds));
+      return { ok: true };
+    });
   }
 
   // ---- Queries ----------------------------------------------------------------------------

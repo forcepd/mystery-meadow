@@ -1,5 +1,6 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 import { gateSlot, tileToWorld, yardToWorld, WORLD_WIDTH } from '../../src/game/layout';
+import { DEFAULT_PROFILE } from '../../src/bridge/gameSession';
 import { toSaveFile } from '../../src/save/schema';
 import { FakeClock } from '../../src/sim/clock';
 import { GameSim } from '../../src/sim/GameSim';
@@ -77,7 +78,7 @@ export function buildSave(edit: (state: SimState, now: number) => void) {
   const sim = GameSim.newGame({ clock: new FakeClock(now), seed: 1 });
   const state = sim.toState();
   edit(state, now);
-  return toSaveFile({ id: 'default', username: 'Player' }, state);
+  return toSaveFile(DEFAULT_PROFILE, state);
 }
 
 export function testAnimal(now: number, overrides: Partial<Animal> = {}): Animal {
