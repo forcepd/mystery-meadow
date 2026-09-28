@@ -6,6 +6,12 @@
     "outDir": "node_modules/.tmp/node",
     "tsBuildInfoFile": "node_modules/.tmp/node.tsbuildinfo"
   },
-  "include": ["vite.config.ts", "vitest.config.ts", "playwright.config.ts", "tests"],
-  "references": [{ "path": "./tsconfig.sim.json" }]
+  "include": [
+    "vite.config.ts",
+    "vitest.config.ts",
+    "playwright.config.ts",
+    "tests",
+    "scripts/**/*.ts"
+  ],
+  "references": [{ "path": "./tsconfig.sim.json" }, { "path": "./tsconfig.app.json" }]
 }

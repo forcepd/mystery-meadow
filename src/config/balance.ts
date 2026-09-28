@@ -21,6 +21,10 @@ export const BALANCE = deepFreeze({
 
   visitor: { gateWaitMinutes: 5, autoRevealSeconds: 60 },
 
+  // [DEFAULT, Phase 1] Each placed yard lure with affinity for a species adds this much to that
+  // species' weight within its rolled rarity tier (every species starts at weight 1).
+  affinity: { bonusPerLure: 1 },
+
   rarity: {
     baseWeights: { common: 60, uncommon: 25, rare: 10, epic: 4, legendary: 1 },
     lureBoost:   { common: -0.01, uncommon: 0.01, rare: 0.02, epic: 0.03, legendary: 0.04 },
@@ -37,10 +41,13 @@ export const BALANCE = deepFreeze({
     litterWeights: { 1: 30, 2: 30, 3: 20, 4: 12, 5: 8 },
     babyKeepsMotherColor: 0.7,
     sparkleInheritChance: 0.25,
+    // [DEFAULT, Phase 1] Babies appear within this distance of the mother (zone coords are 0..1).
+    birthScatter: 0.06,
   },
 
   holdMinutes: 20,
   babyGrowMinutes: 20,
+  newBadgeSeconds: 60,
 
   needs: {
     hungerDrainMinutes: 30,
@@ -81,6 +88,10 @@ export const BALANCE = deepFreeze({
   wander: { minSeconds: 60, maxSeconds: 120 },
 
   offline: { maxCatchUpHours: 8, maxGateQueue: 3 },
+
+  // [DEFAULT, Phase 1] Fixed sim tick. A gap between updates longer than offlineGapSeconds is
+  // treated as offline time (safety net in case the app misses a visibilitychange).
+  time: { tickSeconds: 1, offlineGapSeconds: 300 },
 
   houseColorChangeCost: 50,
 } as const);

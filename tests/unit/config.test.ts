@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { BALANCE } from '../../src/config/balance';
+import { HOUSE_COLORS, DEFAULT_HOUSE_COLOR } from '../../src/config/houseColors';
+import { ITEMS, getItem } from '../../src/config/items';
 import { SPECIES, getSpecies } from '../../src/config/species';
 import { RARITIES } from '../../src/sim/types';
 
@@ -111,5 +113,37 @@ describe('SPECIES', () => {
   it('is frozen', () => {
     expect(Object.isFrozen(SPECIES)).toBe(true);
     expect(Object.isFrozen(SPECIES[0]?.variants)).toBe(true);
+  });
+});
+
+describe('ITEMS (yard lures, DESIGN 6.5)', () => {
+  it('has the 10 starter lures with unique ids', () => {
+    const lures = ITEMS.filter((i) => i.category === 'lure');
+    expect(lures).toHaveLength(10);
+    expect(new Set(ITEMS.map((i) => i.id)).size).toBe(ITEMS.length);
+  });
+
+  it('only names real species in affinities', () => {
+    for (const item of ITEMS) {
+      for (const id of item.affinity) expect(getSpecies(id), `${item.id} -> ${id}`).toBeDefined();
+    }
+  });
+
+  it('has positive costs and lure values', () => {
+    for (const item of ITEMS) {
+      expect(item.cost).toBeGreaterThan(0);
+      expect(item.lure).toBeGreaterThan(0);
+    }
+    expect(getItem('little_pond')?.lure).toBe(8);
+    expect(getItem('nope')).toBeUndefined();
+  });
+});
+
+describe('HOUSE_COLORS', () => {
+  it('has 8 unique swatches and a valid default', () => {
+    expect(HOUSE_COLORS).toHaveLength(8);
+    expect(new Set(HOUSE_COLORS.map((c) => c.id)).size).toBe(8);
+    for (const c of HOUSE_COLORS) expect(c.color).toMatch(/^#[0-9a-f]{6}$/i);
+    expect(HOUSE_COLORS.map((c) => c.id)).toContain(DEFAULT_HOUSE_COLOR);
   });
 });
