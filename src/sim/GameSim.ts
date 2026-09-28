@@ -19,6 +19,20 @@ import { feedTreat, isBowl, refillBowl } from './systems/feeding';
 import { renameAnimal } from './systems/naming';
 import { careMultiplier, cleanliness } from './systems/needs';
 import { pet } from './systems/petting';
+import { dexProgress, type DexProgress } from './systems/dex';
+import {
+  freeSlots,
+  freeStorage,
+  keep,
+  keepBumping,
+  petSlots,
+  petsOut,
+  retrievePet,
+  storageSpaces,
+  storePet,
+  swapPets,
+  unkeep,
+} from './systems/keeping';
 import { cleanPoop } from './systems/poop';
 import { sickChance } from './systems/sickness';
 import { canTrain } from './systems/tricks';
@@ -227,6 +241,35 @@ export class GameSim {
     return result;
   }
 
+  /** Keep in a free Pet Slot. Refused when slots are full (the UI opens the Swap screen). */
+  keep(animalId: string): CommandResult {
+    return this.command(() => keep(this.ctx, animalId));
+  }
+
+  unkeep(animalId: string): CommandResult {
+    return this.command(() => unkeep(this.ctx, animalId));
+  }
+
+  /** Into Pet Storage (keeping it too, if it wasn't kept yet). */
+  storePet(animalId: string): CommandResult {
+    return this.command(() => storePet(this.ctx, animalId, this.now()));
+  }
+
+  /** Out of Pet Storage into a free slot. */
+  retrievePet(animalId: string): CommandResult {
+    return this.command(() => retrievePet(this.ctx, animalId, this.now()));
+  }
+
+  /** A kept pet that's out and a stored pet trade places. */
+  swapPets(outId: string, storedId: string): CommandResult {
+    return this.command(() => swapPets(this.ctx, outId, storedId, this.now()));
+  }
+
+  /** Keep a new animal in `bumpId`'s slot; `bumpId` goes into Storage. */
+  keepBumping(animalId: string, bumpId: string): CommandResult {
+    return this.command(() => keepBumping(this.ctx, animalId, bumpId, this.now()));
+  }
+
   // ---- Queries ----------------------------------------------------------------------------
 
   getAnimal(id: string): Readonly<Animal> | undefined {
@@ -298,6 +341,26 @@ export class GameSim {
   sickChance(animalId: string): number | undefined {
     const animal = findAnimal(this.ctx.state.world, animalId);
     return animal && sickChance(this.ctx.state.world, animal);
+  }
+
+  /** Pet Slots: total, in use (kept pets out), and free. */
+  petSlots(): { total: number; used: number; free: number } {
+    const world = this.ctx.state.world;
+    return { total: petSlots(world), used: petsOut(world).length, free: freeSlots(world) };
+  }
+
+  petStorage(): { total: number; used: number; free: number } {
+    const world = this.ctx.state.world;
+    return { total: storageSpaces(world), used: world.petStorage.length, free: freeStorage(world) };
+  }
+
+  dex(): DexProgress {
+    return dexProgress(this.ctx.state.world);
+  }
+
+  /** A pet in Storage (paused), by id. */
+  getStoredPet(id: string): Readonly<Animal> | undefined {
+    return this.ctx.state.world.petStorage.find((p) => p.animal.id === id)?.animal;
   }
 
   canTrain(animalId: string): CommandResult {

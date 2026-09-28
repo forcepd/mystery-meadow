@@ -1,6 +1,7 @@
 import { ILLNESSES } from '../config/illnesses';
 import { SPECIES, getSpecies } from '../config/species';
 import type { GameSim } from './GameSim';
+import { createAnimal, randomPosition } from './systems/animals';
 import { addCoins, addGems } from './systems/economy';
 import { rollLitterSize, rollVisitor } from './systems/rarity';
 import { makeSick } from './systems/sickness';
@@ -106,5 +107,29 @@ export function debugCureAll(sim: GameSim): void {
 export function debugSetSicknessEnabled(sim: GameSim, enabled: boolean): void {
   sim.debugRun((ctx) => {
     ctx.state.world.settings.sicknessEnabled = enabled;
+  });
+}
+
+/** Puts `n` random kept pets straight into Pet Storage (as much as fits). Returns how many. */
+export function debugAddStoredPets(sim: GameSim, n: number): number {
+  return sim.debugRun((ctx) => {
+    const world = ctx.state.world;
+    const now = ctx.state.meta.lastSeenAt;
+    const room = sim.petStorage().free;
+    const count = Math.min(n, room);
+    for (let i = 0; i < count; i++) {
+      const roll = rollVisitor(ctx.rng, world);
+      const animal = createAnimal(ctx, {
+        ...roll,
+        zone: 'yard',
+        position: randomPosition(ctx),
+        at: now,
+        isBaby: false,
+        litterSize: 0,
+      });
+      animal.isKept = true;
+      world.petStorage.push({ animal, storedAt: now });
+    }
+    return count;
   });
 }

@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   debugAddCoins,
   debugAddGems,
+  debugAddStoredPets,
   debugCureAll,
   debugMakeSick,
   debugRunOnline,
@@ -92,5 +93,13 @@ describe('debug commands', () => {
     expect(sick()).toHaveLength(0);
     debugSetSicknessEnabled(h.sim, false);
     expect(h.sim.state.world.settings.sicknessEnabled).toBe(false);
+  });
+
+  it('adds kept pets straight to Storage, up to the free space', () => {
+    const h = newSim();
+    expect(debugAddStoredPets(h.sim, 5)).toBe(5);
+    expect(h.sim.state.world.petStorage.every((p) => p.animal.isKept)).toBe(true);
+    expect(debugAddStoredPets(h.sim, 50)).toBe(15);
+    expect(h.sim.animalCount()).toBe(0);
   });
 });

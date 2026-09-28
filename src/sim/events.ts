@@ -37,6 +37,13 @@ export type SimEvents = {
   /** A treatment was given (`cost` may be 0). `cured` is false for the wrong treatment. */
   vetTreated: { animal: Animal; treatmentId: string; cost: number; cured: boolean };
   animalCured: { animal: Animal; illnessId: string };
+  /** Marked Keep (DESIGN 10.1). */
+  petKept: { animal: Animal };
+  petUnkept: { animal: Animal };
+  /** Left the world for Pet Storage (paused). */
+  petStored: { animal: Animal };
+  /** Came out of Pet Storage into a slot. */
+  petRetrieved: { animal: Animal };
   caughtUp: OfflineSummary;
   /** Something in the state may have changed (a tick ran or a command was called). */
   changed: undefined;
