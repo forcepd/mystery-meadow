@@ -4,6 +4,7 @@ import { tickLifecycle } from './systems/lifecycle';
 import { tickBirths } from './systems/pregnancy';
 import { shiftWorld } from './systems/timeShift';
 import { refreshGateTimers, tickGate, tickVisitorTimer } from './systems/visitors';
+import { tickWander } from './systems/wander';
 import type { Ms, OfflineSummary } from './types';
 
 export const TICK_MS: Ms = seconds(BALANCE.time.tickSeconds);
@@ -15,6 +16,7 @@ export function runTick(ctx: SimContext, t: Ms): void {
   tickLifecycle(ctx, prev, t);
   tickVisitorTimer(ctx, t);
   tickGate(ctx, t);
+  tickWander(ctx, t);
   ctx.state.meta.lastSeenAt = t;
 }
 

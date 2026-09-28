@@ -127,14 +127,15 @@ export class GameSim {
       this.catchUp();
       return;
     }
+    const before = this.now();
     runOnline(this.ctx, this.clock.now());
-    this.afterChange();
+    this.afterChange(this.now() !== before);
   }
 
   /** Runs offline catch-up to the clock's time and emits `caughtUp`. */
   catchUp(): OfflineSummary {
     const summary = runOffline(this.ctx, this.clock.now());
-    this.afterChange();
+    this.afterChange(summary.awayMs > 0);
     if (summary.awayMs > 0) this.events.emit('caughtUp', summary);
     return summary;
   }
@@ -211,20 +212,31 @@ export class GameSim {
 
   // ---- Internals --------------------------------------------------------------------------
 
-  private command(run: () => CommandResult): CommandResult {
-    this.update();
-    const result = run();
-    this.afterChange();
+  /**
+   * @internal Dev tools only (src/sim/debugCommands.ts). Runs `fn` with direct access to the
+   * sim internals and the clock's current time, without catching up first.
+   */
+  debugRun<T>(fn: (ctx: SimContext, clockNow: Ms) => T): T {
+    const result = fn(this.ctx, this.clock.now());
+    this.afterChange(true);
     return result;
   }
 
-  private afterChange(): void {
+  private command(run: () => CommandResult): CommandResult {
+    this.update();
+    const result = run();
+    this.afterChange(true);
+    return result;
+  }
+
+  private afterChange(changed: boolean): void {
     this.syncRng();
     const crowded = isCrowded(this.ctx.state.world);
     if (crowded !== this.crowded) {
       this.crowded = crowded;
       this.events.emit('crowdedChanged', { crowded });
     }
+    if (changed) this.events.emit('changed', undefined);
   }
 
   private syncRng(): void {

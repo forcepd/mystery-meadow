@@ -75,4 +75,15 @@ describe('ScaledClock', () => {
     expect(() => clock.setScale(Infinity)).toThrow();
     expect(clock.getScale()).toBe(1);
   });
+
+  it('can start ahead of its source and jump forward', () => {
+    const source = new FakeClock(1000);
+    const clock = new ScaledClock(source, 1, 50_000);
+    expect(clock.now()).toBe(50_000);
+    source.advance(10);
+    expect(clock.now()).toBe(50_010);
+    clock.jump(5000);
+    expect(clock.now()).toBe(55_010);
+    expect(() => clock.jump(-1)).toThrow();
+  });
 });

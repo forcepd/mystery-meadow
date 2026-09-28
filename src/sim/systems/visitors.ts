@@ -1,6 +1,6 @@
 import { BALANCE } from '../../config/balance';
 import { minutes, nextId, seconds, type SimContext } from '../context';
-import type { CommandResult, Ms, Visitor } from '../types';
+import type { CommandResult, Ms, Visitor, VisitorRoll } from '../types';
 import { createAnimal, discover, randomPosition } from './animals';
 import { freeCapacity, isCrowded, visitorIntervalMinutes } from './housing';
 import { rollVisitor } from './rarity';
@@ -28,14 +28,18 @@ export function tickVisitorTimer(ctx: SimContext, t: Ms): void {
   }
 }
 
-function spawnVisitor(ctx: SimContext, at: Ms): Visitor {
+export function spawnVisitor(
+  ctx: SimContext,
+  at: Ms,
+  roll: VisitorRoll = rollVisitor(ctx.rng, ctx.state.world),
+): Visitor {
   const visitor: Visitor = {
     id: nextId(ctx, 'v'),
     arrivedAtGate: at,
     autoRevealAt: at + seconds(BALANCE.visitor.autoRevealSeconds),
     leavesAt: at + minutes(BALANCE.visitor.gateWaitMinutes),
     revealed: false,
-    roll: rollVisitor(ctx.rng, ctx.state.world),
+    roll,
   };
   ctx.state.world.gateQueue.push(visitor);
   ctx.emit('visitorArrived', { visitor });

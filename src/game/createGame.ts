@@ -1,8 +1,9 @@
 import Phaser from 'phaser';
+import type { GameSession } from '../bridge/gameSession';
 import { COLORS, WORLD_HEIGHT, WORLD_WIDTH } from './constants';
-import { MeadowScene } from './scenes/MeadowScene';
+import { YardScene } from './scenes/YardScene';
 
-export function createGame(parent: HTMLElement): Phaser.Game {
+export function createGame(parent: HTMLElement, session: GameSession): Phaser.Game {
   return new Phaser.Game({
     type: Phaser.AUTO, // WebGL, falling back to Canvas
     parent,
@@ -15,6 +16,6 @@ export function createGame(parent: HTMLElement): Phaser.Game {
     },
     input: { activePointers: 3 },
     banner: false,
-    scene: [MeadowScene],
+    scene: [new YardScene(session)],
   });
 }

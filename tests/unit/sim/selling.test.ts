@@ -54,6 +54,14 @@ describe('selling', () => {
     expect(coins).toHaveBeenCalledWith({ coins: BALANCE.startingCoins + 250, delta: 250 });
   });
 
+  it('announces the sale only after the coins are in (so save-after-sale sees them)', () => {
+    const h = sellable({ rarity: 'rare' });
+    let coinsAtEvent = -1;
+    h.sim.events.on('animalSold', () => (coinsAtEvent = h.sim.state.world.coins));
+    h.sim.sell('x');
+    expect(coinsAtEvent).toBe(BALANCE.startingCoins + 100);
+  });
+
   it('refuses before the hold timer is done', () => {
     const h = sellable({ holdUntil: START + MIN });
     expect(h.sim.sell('x')).toEqual({ ok: false, reason: 'Not ready to sell yet.' });

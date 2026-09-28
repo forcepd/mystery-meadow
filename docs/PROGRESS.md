@@ -147,3 +147,88 @@ Everything short of that is verified locally: build, unit tests, and e2e on emul
 - The save layer isn't connected to the app, and autosave (every 15 s, on hide, and after purchases or sales) isn't built. Both are Phase 2 work.
 - Care and trick multipliers are stubbed at 1.0 (as the phase asks). The trick bonus formula is implemented and tested with injected tricks.
 - The species-count question from Phase 0 (21 vs 20) is still open.
+
+## Phase 2: First playable yard (built 2026-09-27)
+
+### What was built
+
+**The core loop is playable:** visitor → tap to reveal → walks in → babies → hold timer → sell → coins, on desktop and emulated iPad.
+
+**World (Phaser, `src/game/`)**
+
+- `YardScene` replaces the Phase 0 `MeadowScene`. It's render-only: every frame it reconciles sprites with sim state, and uses sim events only for flourishes (reveal star burst, birth hearts, sale "+45 🪙" and wave goodbye).
+- Placeholder art drawn in code: grass, flowers, the path, a fence with an open gate, and the house in the saved exterior color (default Butter).
+- `AnimalSprite`: a round critter in its variant color, with a name label and badge icons over its head (🤒 🍼 🪙 ❤️ ✨). Babies are 65% size. Sparkle animals get a twinkling ✦ ring.
+- Animals move in three ways: idle breathing, hop-walks, and render-only ambling around their sim position every few seconds. Sprites are depth-sorted by y. Tap targets are 96×120 world px, which is at least 77×96 CSS px on an iPad mini.
+- `VisitorSprite`: a wobbling silhouette with a "?" bubble. It pops into the animal with its name and colored rarity stars when revealed, shows "No room!" while waiting, and waves 👋 when it leaves.
+- `src/game/layout.ts` holds all world coordinates. It has no Phaser import, so e2e tests use it to find things.
+- Reduced motion (the system setting or `settings.reducedMotion`) turns off breathing, ambling, hops, and bursts.
+
+**React overlay (`src/ui/`)**
+
+- **HUD:** coins, gems, and a capacity pill ("5/6", red when Crowded). A visitor pill reads "Next visitor in 4:32", "A visitor is at the gate!" or "Too crowded for visitors". There's also a small Privacy link.
+- **Animal Card:** opens when you tap an animal and closes with ✕ or by tapping empty ground. It shows a portrait, name, colored stars and rarity word, Sparkle tag, badge chips, and "Babies coming in", "Grows up in" and "Ready to sell in 12:34" / "Ready to sell!". The Sell button shows the price. When it can't sell yet it looks disabled but still takes taps and explains why ("Not ready to sell yet.").
+- **Toasts** (bottom center, max 3, 3.5 s) with the DESIGN 17.4 wording plus: visitor waved goodbye, sold "+price", room again, a "Welcome back!" summary after catch-up, and a save-failed message.
+- **Startup screen** while the save loads, and a friendly "Try again" if it can't load. A broken save is never overwritten.
+
+**Session wiring (`src/bridge/`)**
+
+- `GameSession` loads the `default` profile's save (then runs catch-up) or starts and saves a new game.
+- It autosaves every `save.autosaveSeconds` (15 s) while visible, when the page is hidden (`visibilitychange`, `pagehide`), and after every sale.
+- It runs catch-up when the page becomes visible again. Save failures become a toast instead of a crash.
+- `runSession` connects it to requestAnimationFrame and page events. The session lives outside React, so StrictMode can't start two games.
+- **The game clock never runs backwards:** it resumes from the later of the device time and the save's last tick. This also carries the dev time scale.
+
+**Sim additions**
+
+- The wander timer (`systems/wander.ts`): every 60–120 s (`wander.*`) each animal picks a new spot in its zone. It's paused offline. Phase 6 adds switching zones at the same moment.
+- New events: `changed` (drives React re-renders) and `gemsChanged`. There's also `addGems`.
+- `debugCommands.ts` (dev only): spawn a visitor now with forced rarity, species, variant, Sparkle, or litter; add coins or gems; and run online across a clock jump.
+- `ScaledClock` gained `startAt` and `jump()`.
+
+**Debug Panel (`src/dev/`, dev builds only)**
+
+- The panel has: time scale 1x/10x/30x/60x/120x, advance +1/+5/+20/+60 min (played with online rules), and spawn visitor with rarity/species/Sparkle/pregnancy choices. It also adds coins or gems, saves now, and starts a new game (deletes the save).
+- It loads through `import.meta.env.DEV ? lazy(...) : null`. Production builds contain none of it; an e2e test and a check of `dist/` confirm this.
+
+**Tests**
+
+- **Unit:** 178 in total (31 new). They cover:
+  - Wander, the `changed` event, and debug commands.
+  - `GameSession`: new game, load plus catch-up, save after sale, hide/visible, autosave, save failures, the clock never going backwards, deleting a save, and the version counter.
+  - Countdown formatting, names, and toast wording.
+  - A regression test for sale-event ordering (see bugs below).
+- **E2E:** 17 tests × 3 browser setups. The Phase 0 tap-counter tests were replaced with real flows:
+  - A new game's HUD.
+  - Tap a mystery visitor so it walks in.
+  - Sell for coins, and the sale survives a reload.
+  - A disabled Sell button explains itself.
+  - Tapping empty ground closes the card.
+  - A litter is born with its toast.
+  - Canvas taps reach the world, and card taps don't fall through.
+  - Card buttons are at least 48 px.
+  - No Debug Panel in production.
+  - Tests seed saves straight into IndexedDB and use reduced motion, so animals sit at known spots.
+
+### Bugs found and fixed
+
+- `animalSold` fired before the coins were added, so the save-after-sale saved the old balance. The e2e reload test caught this. The event now fires after the state is final.
+- Newborns popped in at adult size: the pop-in animation grew each sprite before its baby size was set.
+
+### Defaults chosen (spec left open)
+
+1. **In-yard movement.** The sim moves each animal to a new spot on its wander timer. Between moves the scene ambles it around that spot, render-only.
+2. **Visitors reveal on a single tap.** Animals open their card on tap. Phase 3 adds tap-and-hold petting.
+3. **The Animal Card is a right-side panel** (the spec allows a bottom sheet or side panel), so the yard stays visible.
+4. **Toasts sit at the bottom center** so they never cover the HUD or the card.
+5. **House color:** the first of the 8 swatches (Butter) until onboarding in Phase 8.
+6. **One default profile** (`default` / "Player"). Profiles arrive in Phase 8.
+
+### Known issues
+
+- **Needs a real-device check:** playing the core loop on a real iPad and on desktop Safari/Firefox (DESIGN 22 manual checklist). Everything was verified in Chromium and emulated iPad WebKit only.
+- Placeholder art: every species has the same round shape, and very dark variants (black kitten, dark otter) hide their eyes. Phase 10 is the art pass.
+- Headless test browsers have no color emoji font, so 🪙 renders gray in screenshots. Real iPads and desktops show color.
+- A baby's name label keeps the adult position, so it floats a little low under the smaller body.
+- The iPad "Add to Home Screen" prompt (DESIGN 18.4) is still not built (planned with onboarding, Phase 8).
+- A kept animal never gets a "Ready to sell" toast. That's by design, but Keep itself arrives in Phase 5.

@@ -18,7 +18,10 @@ export type SimEvents = {
   readyToSell: { animal: Animal };
   animalSold: { animal: Animal; price: number };
   coinsChanged: { coins: number; delta: number };
+  gemsChanged: { gems: number; delta: number };
   crowdedChanged: { crowded: boolean };
   dexDiscovered: { key: string };
   caughtUp: OfflineSummary;
+  /** Something in the state may have changed (a tick ran or a command was called). */
+  changed: undefined;
 };

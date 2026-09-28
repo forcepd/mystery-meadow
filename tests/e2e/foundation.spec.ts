@@ -1,21 +1,13 @@
-import { expect, test, type Locator, type Page } from '@playwright/test';
-
-/** Taps with touch on touch devices (iPad projects) and clicks with a mouse elsewhere. */
-async function press(page: Page, target: Locator, position?: { x: number; y: number }) {
-  const hasTouch = await page.evaluate(() => navigator.maxTouchPoints > 0);
-  if (hasTouch) await target.tap(position ? { position } : undefined);
-  else await target.click(position ? { position } : undefined);
-}
-
-async function canvasReady(page: Page) {
-  await expect(page.locator('[data-testid="game-canvas"] canvas')).toBeVisible();
-  // Give Phaser a frame to boot its input system.
-  await page.waitForFunction(() => {
-    const c = document.querySelector('[data-testid="game-canvas"] canvas') as HTMLCanvasElement;
-    return c && c.width > 0 && c.getBoundingClientRect().width > 0;
-  });
-  await page.waitForTimeout(250);
-}
+import { expect, test } from '@playwright/test';
+import {
+  animalTapPoint,
+  buildSave,
+  canvasReady,
+  press,
+  seedSave,
+  tapWorld,
+  testAnimal,
+} from './helpers';
 
 test.describe('foundation', () => {
   test('loads the world canvas with the HUD layered on top', async ({ page }) => {
@@ -26,29 +18,25 @@ test.describe('foundation', () => {
     await expect(page.getByTestId('rotate-screen')).toBeHidden();
   });
 
-  test('a tap on the canvas registers in the world and only there', async ({ page }) => {
-    await page.goto('./');
-    await canvasReady(page);
-    const canvas = page.locator('[data-testid="game-canvas"] canvas');
-    const box = (await canvas.boundingBox())!;
-    // Middle of the meadow, away from HUD elements.
-    await press(page, canvas, { x: box.width * 0.4, y: box.height * 0.5 });
-    await expect(page.getByTestId('canvas-taps')).toHaveText('1');
-    await press(page, canvas, { x: box.width * 0.3, y: box.height * 0.4 });
-    await expect(page.getByTestId('canvas-taps')).toHaveText('2');
-    await expect(page.getByTestId('button-taps')).toHaveText('0');
-  });
-
-  test('a tap on a React button registers and does not fall through to the canvas', async ({
+  test('a tap on the canvas reaches the world, and UI taps do not fall through', async ({
     page,
   }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await seedSave(
+      page,
+      buildSave((s, now) => s.world.animals.push(testAnimal(now))),
+    );
     await page.goto('./');
     await canvasReady(page);
-    const button = page.getByRole('button', { name: /send a heart/i });
-    await press(page, button);
-    await press(page, button);
-    await expect(page.getByTestId('button-taps')).toHaveText('2');
-    await expect(page.getByTestId('canvas-taps')).toHaveText('0');
+    const host = page.getByTestId('game-canvas');
+    await tapWorld(page, animalTapPoint({ x: 0.5, y: 0.5 }));
+    await expect(host).toHaveAttribute('data-canvas-taps', '1');
+    const card = page.getByRole('complementary', { name: /bunny card/i });
+    await expect(card).toBeVisible();
+    // The close button sits over the canvas; tapping it must not count as a world tap.
+    await press(page, card.getByRole('button', { name: 'Close' }));
+    await expect(card).toBeHidden();
+    await expect(host).toHaveAttribute('data-canvas-taps', '1');
   });
 
   test('interactive elements meet the 48x48 touch target minimum', async ({ page }) => {

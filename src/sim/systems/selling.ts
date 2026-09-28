@@ -47,8 +47,9 @@ export function sell(ctx: SimContext, animalId: string, now: Ms): CommandResult 
   for (const itemId of Object.values(animal.outfit)) {
     if (itemId) world.inventory[itemId] = (world.inventory[itemId] ?? 0) + 1;
   }
-  ctx.emit('animalSold', { animal, price });
   addCoins(ctx, price);
+  // Announced once the state is final, so listeners (like the save-after-sale) see the coins.
+  ctx.emit('animalSold', { animal, price });
   // A spot just opened: anyone waiting at the gate comes in now.
   admitVisitors(ctx, now);
   return { ok: true };

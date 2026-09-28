@@ -12,28 +12,25 @@
   pointer-events: auto;
 }
 
-.topBar {
+.topLeft,
+.topRight {
+  position: absolute;
+  top: calc(12px + var(--safe-top));
   display: flex;
-  gap: 12px;
-  width: max-content;
+  gap: 10px;
 }
 
-.pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: var(--touch-min);
-  padding: 0 18px 0 10px;
-  border-radius: var(--radius-pill);
-  background: var(--color-panel);
-  border: 3px solid var(--color-panel-border);
-  box-shadow: var(--shadow-soft);
-  font-weight: 800;
-  font-size: 22px;
+.topLeft {
+  left: calc(12px + var(--safe-left));
+}
+
+.topRight {
+  right: calc(12px + var(--safe-right));
 }
 
 .icon {
   display: inline-block;
+  flex: none;
   width: 28px;
   height: 28px;
 }
@@ -49,61 +46,24 @@
   clip-path: polygon(50% 0, 100% 38%, 80% 100%, 20% 100%, 0 38%);
 }
 
-.panel {
-  position: absolute;
-  right: calc(12px + var(--safe-right));
-  bottom: calc(12px + var(--safe-bottom));
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 8px;
-  padding: 14px 18px;
-  border-radius: var(--radius-lg);
-  background: var(--color-panel);
-  border: 3px solid var(--color-panel-border);
-  box-shadow: var(--shadow-soft);
+.emoji {
+  font-size: 24px;
+  line-height: 1;
 }
 
-.stat {
-  margin: 0;
+.crowded {
+  background: #ffe1d6;
+  border-color: #f0a58a;
 }
 
-.button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-width: var(--touch-min);
-  min-height: 56px;
-  padding: 0 22px;
-  border: none;
-  border-radius: var(--radius-pill);
-  background: var(--color-accent);
-  box-shadow: 0 4px 0 var(--color-accent-dark);
-  color: #fff;
-  font-weight: 800;
+.timer {
+  font-variant-numeric: tabular-nums;
   font-size: 20px;
-  cursor: pointer;
-  touch-action: manipulation;
-  transition: transform 80ms ease;
 }
 
-.button:active {
-  transform: translateY(3px);
-  box-shadow: 0 1px 0 var(--color-accent-dark);
-}
-
-.button:focus-visible,
-.link:focus-visible {
-  outline: 4px solid var(--color-ink);
-  outline-offset: 2px;
-}
-
-.link {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: var(--touch-min);
-  color: var(--color-ink);
-  font-size: 16px;
+.privacy {
+  position: absolute;
+  left: calc(8px + var(--safe-left));
+  bottom: calc(8px + var(--safe-bottom));
+  opacity: 0.7;
 }

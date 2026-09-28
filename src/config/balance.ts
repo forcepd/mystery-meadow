@@ -42,7 +42,7 @@ export const BALANCE = deepFreeze({
     babyKeepsMotherColor: 0.7,
     sparkleInheritChance: 0.25,
     // [DEFAULT, Phase 1] Babies appear within this distance of the mother (zone coords are 0..1).
-    birthScatter: 0.06,
+    birthScatter: 0.12,
   },
 
   holdMinutes: 20,
@@ -92,6 +92,9 @@ export const BALANCE = deepFreeze({
   // [DEFAULT, Phase 1] Fixed sim tick. A gap between updates longer than offlineGapSeconds is
   // treated as offline time (safety net in case the app misses a visibilitychange).
   time: { tickSeconds: 1, offlineGapSeconds: 300 },
+
+  // DESIGN 18.4: autosave interval (real seconds). Also saves on hide and after sales.
+  save: { autosaveSeconds: 15 },
 
   houseColorChangeCost: 50,
 } as const);

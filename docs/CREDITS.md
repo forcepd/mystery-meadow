@@ -22,3 +22,10 @@ None yet (Phase 10).
 ## Code libraries (runtime)
 
 Phaser (MIT), React and React DOM (MIT), Workbox (MIT, via vite-plugin-pwa).
+
+## Art
+
+| Asset                                                | Source                                                                                     | License           |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------ | ----------------- |
+| Placeholder yard, house, and animal shapes (Phase 2) | Drawn in code with Phaser Graphics (`src/game/sprites/`). Original.                        | Original work     |
+| Emoji icons in the HUD, badges, and toasts           | Rendered by the player's own device emoji font. No emoji images are bundled or downloaded. | n/a (system font) |

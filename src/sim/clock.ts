@@ -38,8 +38,9 @@ export class FakeClock implements Clock {
 }
 
 /**
- * Runs faster than its source clock (dev time scale). Changing the scale re-anchors,
- * so the reported time never jumps or goes backwards.
+ * Game clock on top of a source clock. Runs `scale` times faster (dev time scale); changing
+ * the scale re-anchors so time never jumps or goes backwards. `startAt` lets the game resume
+ * from a saved time that is ahead of the source (e.g. the device clock was set back).
  */
 export class ScaledClock implements Clock {
   private anchorSource: Ms;
@@ -49,11 +50,12 @@ export class ScaledClock implements Clock {
   constructor(
     private readonly source: Clock,
     scale = 1,
+    startAt?: Ms,
   ) {
     ScaledClock.assertScale(scale);
     this.scale = scale;
     this.anchorSource = source.now();
-    this.anchorScaled = this.anchorSource;
+    this.anchorScaled = startAt ?? this.anchorSource;
   }
 
   now(): Ms {
@@ -69,6 +71,12 @@ export class ScaledClock implements Clock {
     this.anchorScaled = this.now();
     this.anchorSource = this.source.now();
     this.scale = scale;
+  }
+
+  /** Skips forward (dev "advance time"). */
+  jump(ms: number): void {
+    if (!Number.isFinite(ms) || ms < 0) throw new RangeError(`Can only jump forward (got ${ms})`);
+    this.anchorScaled += ms;
   }
 
   private static assertScale(scale: number): void {
