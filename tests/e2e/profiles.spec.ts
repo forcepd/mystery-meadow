@@ -115,20 +115,30 @@ test.describe('profiles, onboarding, and the tutorial', () => {
     await expect
       .poll(async () => (await readStore<SaveFile>(page, `profile:${id}`)).meta.lastSeenAt)
       .toBeGreaterThan(save.meta.lastSeenAt + 20 * 60_000);
-    save = await readStore<SaveFile>(page, `profile:${id}`);
+    // The yard is busy by now (the new-player quick start brings visitors fast), and animals
+    // wander: read fresh positions each round, try only animals that are ready, and give the
+    // autosave a moment between rounds. A coin or clover on top of one just gets collected.
     let sold = false;
-    for (const a of save.world.animals) {
-      await tapWorld(page, animalTapPoint(a.position));
-      const openCard = page.getByRole('complementary', { name: / card$/ });
-      if (!(await openCard.isVisible())) continue;
-      const sell = openCard.getByRole('button', { name: /sell for/i });
-      if ((await sell.getAttribute('aria-disabled')) === 'false') {
-        await press(page, sell);
-        sold = true;
-        break;
+    for (let round = 0; round < 6 && !sold; round++) {
+      save = await readStore<SaveFile>(page, `profile:${id}`);
+      const now = save.meta.lastSeenAt;
+      const ready = save.world.animals.filter(
+        (a) => a.zone === 'yard' && a.holdUntil <= now && !(a.grownAt && a.grownAt > now),
+      );
+      for (const a of ready) {
+        await tapWorld(page, animalTapPoint(a.position));
+        const openCard = page.getByRole('complementary', { name: / card$/ });
+        if (!(await openCard.isVisible())) continue;
+        const sell = openCard.getByRole('button', { name: /sell for/i });
+        if ((await sell.getAttribute('aria-disabled')) === 'false') {
+          await press(page, sell);
+          sold = true;
+          break;
+        }
+        // Close it: an open card covers part of the yard.
+        await press(page, openCard.getByRole('button', { name: 'Close' }));
       }
-      // Close it: an open card covers part of the yard.
-      await press(page, openCard.getByRole('button', { name: 'Close' }));
+      if (!sold) await page.clock.fastForward('00:16');
     }
     expect(sold).toBe(true);
     await expect(page.getByText(/went to a loving new home/)).toBeVisible();

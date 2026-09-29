@@ -44,7 +44,8 @@ describe('needs decay (DESIGN 8.1)', () => {
   });
 
   it('happiness drains 1.5x faster while Crowded', () => {
-    const h = withAnimal({ id: 'x' }, (s) => {
+    // Stays put: wandering indoors would change how fast it drains.
+    const h = withAnimal({ id: 'x', nextWanderAt: START + 99 * HOUR }, (s) => {
       emptyBowl(s);
       fillAnimals(s, 6, { nextPoopAt: START + 99 * HOUR, holdUntil: START + 99 * HOUR });
     });

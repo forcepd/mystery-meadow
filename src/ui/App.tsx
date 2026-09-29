@@ -2,10 +2,12 @@ import { lazy, Suspense, type ReactNode } from 'react';
 import type { GameSession } from '../bridge/gameSession';
 import { AnimalCard } from './AnimalCard';
 import { AwayCard } from './AwayCard';
+import { DailyGift } from './DailyGift';
 import { DecorateBar } from './DecorateBar';
 import { DexScreen } from './DexScreen';
 import styles from './App.module.css';
 import { GameCanvas } from './GameCanvas';
+import { GoalsScreen } from './GoalsScreen';
 import { HomeStore } from './HomeStore';
 import { Hud } from './Hud';
 import { PetsScreen } from './PetsScreen';
@@ -39,9 +41,11 @@ export function App({ session }: { session: GameSession }) {
         <SettingsScreen />
         <TrainingScreen />
         <PetWardrobe />
+        <GoalsScreen />
         <TutorialCoach />
         <Toasts />
         <AwayCard />
+        <DailyGift />
         {DebugPanel && (
           <Suspense fallback={null}>
             <DebugPanel />

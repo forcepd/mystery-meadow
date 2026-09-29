@@ -45,7 +45,14 @@ export function sfxForEvent<K extends keyof SimEvents>(
     case 'petDressed':
       return 'happy';
     case 'gemsGranted':
+    case 'goalReady':
       return 'gem';
+    case 'goalClaimed':
+    case 'findCollected':
+      return 'coin';
+    case 'goalsCompleted':
+    case 'dailyGiftOpened':
+      return 'fanfare';
     default:
       return null;
   }
@@ -70,6 +77,11 @@ const SOUND_EVENTS = [
   'treatGiven',
   'petDressed',
   'gemsGranted',
+  'goalReady',
+  'goalClaimed',
+  'goalsCompleted',
+  'findCollected',
+  'dailyGiftOpened',
 ] as const satisfies readonly (keyof SimEvents)[];
 
 /** Music for each scene: the vet shares the house's calm tune. */

@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { appBus } from '../bridge/appBus';
 import { formatCountdown } from '../bridge/describe';
+import { GOALS } from '../config/goals';
 import { AvatarView } from './AvatarView';
 import common from './common.module.css';
 import styles from './Hud.module.css';
@@ -37,6 +38,10 @@ export function Hud() {
   const waiting = gateQueue.some((v) => !v.revealed);
   const slots = sim.petSlots();
   const indoor = sim.indoorSlots();
+  // Starter goals: after the tutorial, until every one is collected.
+  const goalsReady = sim.readyGoalCount();
+  const showGoals =
+    profile.tutorial === 'done' && sim.state.world.goals.claimed.length < GOALS.length;
 
   let visitorText: string;
   if (crowded) visitorText = 'Too crowded for visitors';
@@ -72,6 +77,25 @@ export function Hud() {
           </span>
           {slots.used}/{slots.total}
         </div>
+        {showGoals && (
+          <button
+            type="button"
+            className={`${common.pill} ${goalsReady > 0 ? styles.goalsReady : ''}`}
+            aria-label={goalsReady > 0 ? `Goals: ${goalsReady} ready to collect` : 'Goals'}
+            data-testid="goals-button"
+            onClick={() => appBus.emit('openScreen', { screen: 'goals' })}
+          >
+            <span className={styles.emoji} aria-hidden="true">
+              🎯
+            </span>
+            Goals
+            {goalsReady > 0 && (
+              <span className={styles.badge} aria-hidden="true">
+                {goalsReady}
+              </span>
+            )}
+          </button>
+        )}
       </div>
 
       <nav className={styles.nav} aria-label="Menu" hidden={hideMenu}>

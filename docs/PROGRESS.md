@@ -1110,3 +1110,112 @@ The spec's "runs at 60 fps on the target iPad and passes the manual checklist in
 ### Bugs found and fixed (after Phase 10)
 
 - **Vet exam tools hid behind the patient.** Animals set their draw depth to their y position every frame (the patient sits at y = 452), but the tools used depths 20 and 30. The tools now draw at 5000, and the one being used or dragged at 5001. That's above any animal and below the effects (10 000). Checked with a screenshot of a tool mid-exam.
+
+---
+
+## Early-game pass (built 2026-09-29)
+
+The start felt slow: after the tutorial the next visitor took 10 minutes, nothing could be sold for 20, and 100 coins bought almost nothing. You picked ideas 1, 2, 3, 4, 6, and 7.
+
+### What was built
+
+**1. A welcome wave of visitors** (`BALANCE.welcome`, `systems/welcome.ts`)
+
+- A new player's first 5 visitors come 2 minutes apart; then the Cottage's usual 10 minutes. With the tutorial, the first comes right away.
+- Offline arrivals use up quick gaps too. Skipped visitors (crowded yard) don't.
+
+**2. Sooner first sales**
+
+- The first 3 animals that walk in can be sold after 5 minutes. After that it's the usual 20.
+- **This changes decision #6 ("Sell unlocks at 20 min")** for those 3 animals only.
+
+**4. Guaranteed early surprises**
+
+- The new-player visitors get a fixed list of surprises, one each, in order: the tutorial visitor (none), then "expecting babies" (at least 2), then "at least Uncommon".
+- If the yard is crowded and a visitor is skipped, the surprise waits for the next one.
+
+**3. Meadow Goals** (`src/config/goals.ts`, `systems/goals.ts`, `GoalsScreen.tsx`)
+
+- **The 8 goals:**
+
+  | Goal | Reward |
+  |---|---|
+  | Meet 3 mystery visitors | +20 🪙 |
+  | Fill a food bowl | +10 🪙 |
+  | Pet animals 5 times | +15 🪙 |
+  | Clean up 3 poops | +15 🪙 |
+  | Give an animal a name | +5 💎 |
+  | Make your first sale | +10 💎 |
+  | Put a lure in the yard | +20 🪙 |
+  | Teach a trick | +10 💎 |
+
+  Finishing all of them gives a **free Flower Garden and +50 🪙**.
+- **Counting:** the sim counts the player's own actions (not Scoop Bot's or the Auto-Feeder's). A lure only counts when placed in the yard.
+- **HUD:** a 🎯 Goals button appears after the tutorial. It turns yellow with a pulsing count when something is ready, and disappears once every goal is collected. There's a "Goal done!" toast and sound.
+- **Data-driven:** a new goal is a data entry that uses one of the 8 things the sim counts.
+
+**6. Things to find in the yard** (`BALANCE.finds`, `systems/finds.ts`, `FindSprite.ts`, `art/findSvg.ts`)
+
+- A coin (+3), a butterfly (+2), or a lucky clover (+6) appears every 2–4 minutes, starting 5 minutes into a new game. There are at most 2 at once.
+- Each floats away after 3 minutes if nobody taps it (no harm done). Tapping one sends coins flying to the counter.
+- **Online only:** nothing piles up while away.
+- **Placement:** finds draw above animals, so they're always tappable, with an 88 px tap target. They're hidden while decorating.
+
+**7. A daily present** (`BALANCE.dailyGift`, `systems/dailyGift.ts`, `DailyGift.tsx`)
+
+- **When:** on the first play of each local day (not a new player's first day). It waits for the tutorial and the away card.
+- **Opening:** tap the wiggling 🎁 to open it.
+  - 55%: 30–60 coins.
+  - 25%: a yard lure (Carrot Patch, Bird Bath, Toy Basket, or Flower Garden), placed from Decorate.
+  - 20%: 5 gems plus 20 coins.
+- **Missed days:** skipping days is never punished; it's just one present when you come back.
+
+**Plumbing**
+
+- **Save v7:** `world.welcome`, `goals`, `finds`, `nextFindAt`, and `dailyGift`.
+  - The migration treats an existing game as past the quick start. Goals start fresh, the first find comes 2 minutes after loading, and **a present is waiting** (so your daughter gets one on her next play).
+- **Saving:** claiming a goal, tapping a find, and opening the present save right away.
+- **Unit tests:** `newSim()` in the tests now defaults to no quick start, so tests of other rules keep their plain timings. The quick start has its own tests.
+
+### Pacing effect (please look at this)
+
+Economy harness, perfect bot, 40 seeds:
+
+| | Without quick start | With quick start |
+|---|---|---|
+| Coins earned in the first 30 min | 55 | **473** |
+| Hours to afford the Sunny Bungalow | 3.4 | **2.35** |
+
+The start is much busier, as intended. But because the yard fills to capacity about 40 minutes sooner, the Bungalow also comes about an hour sooner, which is below DESIGN 15.1's "≈ 3–4 hours". A real kid is slower than the bot. If it feels too fast, a Bungalow price of about 2,000 (from 1,500) would bring it back. I haven't changed any prices.
+
+### Tests
+
+- **Unit:** 515 in total (24 new). They cover:
+  - Visitor gaps: 2 minutes ×5 then 10; plain timings without the quick start; the tutorial visitor right away.
+  - Quick holds: 3 at 5 minutes, then 20.
+  - Surprises across 30 seeds, including crowded yards, each used once.
+  - Goals: counting, helper actions ignored, reward once, lures only in the yard, the all-goals prize, data sanity.
+  - Finds: first at 5 minutes, collecting, at most 2, the 3-minute lifetime, about one every 3 minutes, none offline.
+  - The daily present: not on day one, once a day, missed days, all 3 kinds of reward really added.
+  - The v6 → v7 migration, saving right away, and sounds.
+- **E2E:** 256 passed (5 skipped, 3 of them the opt-in `npm run perf`). New:
+  - Collect a goal from the HUD.
+  - Tap a coin in the yard.
+  - Open a present, and it stays opened after a reload.
+  - The Goals screen in the accessibility check.
+- **Updated:**
+  - The new-game countdown now expects 2:00.
+  - The Phase 8 onboarding test now reads fresh positions and only taps animals that are ready to sell. The busier yard made its old "tap each saved position" loop fail about 1 time in 9; it now passes 36 of 36.
+  - Two statistical economy tests use more seeds (the random stream shifted), and the care-vs-neglect comparison runs without the quick start.
+
+### Defaults chosen: please confirm or change
+
+1. All the numbers above: 5 fast visitors 2 minutes apart, 3 quick sales at 5 minutes, the goal list and rewards, find values and timing, and the present's odds.
+2. The present **isn't given on day one** (the tutorial and goals are already a lot), but is given right away to existing saves.
+3. **Only yard lures count** for the lure goal. Finds only appear in the yard, not the house.
+4. The Goals button sits in the top bar after the Pet Slots pill, and is hidden during the tutorial.
+
+### Known issues
+
+- On this Mac's WebKit, the 🪙 emoji draws as a grey coin. That comes from the device's emoji font (it was already like this in toasts); iPads show a gold coin.
+- A find can land on top of an animal. The first tap then collects the find, and the second tap reaches the animal.

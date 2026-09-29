@@ -1,4 +1,5 @@
 import { BALANCE } from '../config/balance';
+import { getGoal } from '../config/goals';
 import { getIllness } from '../config/illnesses';
 import { getTrick } from '../config/tricks';
 import type { SimEvents } from '../sim/events';
@@ -57,6 +58,14 @@ export const TOASTS: {
     crowded
       ? { icon: '🐾', text: 'Your yard is crowded!' }
       : { icon: '🌼', text: 'There’s room again. Visitors are on their way!' },
+  goalReady: ({ goalId }) => ({
+    icon: '🎯',
+    text: `Goal done: ${getGoal(goalId)?.text ?? 'nice work'}!`,
+  }),
+  goalsCompleted: () => ({
+    icon: '🏆',
+    text: 'You finished every Meadow Goal! A Flower Garden is yours.',
+  }),
   caughtUp: (s) => {
     // Longer breaks get the "While you were away" card instead (bridge/away.ts).
     if (s.awayMs >= BALANCE.offline.summaryMinMinutes * 60_000) return null;

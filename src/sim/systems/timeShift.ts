@@ -34,4 +34,6 @@ export function shiftWorld(world: WorldState, delta: Ms): void {
     visitor.leavesAt += delta;
   }
   for (const poop of world.poops) poop.createdAt += delta;
+  world.nextFindAt += delta;
+  for (const find of world.finds) find.expiresAt += delta;
 }

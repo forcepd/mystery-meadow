@@ -78,8 +78,8 @@ export class GameSession {
     // Before the save listeners, so each save includes its own activity line.
     this.logActivity();
     // DESIGN 18.4: save after any sale or purchase (treats, vet visits and treatments, store,
-    // Real Estate). Renames, pet moves, decorating, gems, and settings too, so a quick reload
-    // keeps them.
+    // Real Estate). Renames, pet moves, decorating, gems, settings, goals, finds, and the daily
+    // present too, so a quick reload keeps them.
     for (const event of [
       'animalSold',
       'treatGiven',
@@ -102,6 +102,9 @@ export class GameSession {
       'trickPracticed',
       'trickLearned',
       'petDressed',
+      'goalClaimed',
+      'findCollected',
+      'dailyGiftOpened',
     ] as const) {
       sim.events.on(event, () => void this.save());
     }

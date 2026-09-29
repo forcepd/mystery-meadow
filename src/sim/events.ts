@@ -1,3 +1,5 @@
+import type { GoalReward } from '../config/goals';
+import type { DailyGiftReward } from './systems/dailyGift';
 import type {
   Animal,
   GameSettings,
@@ -5,6 +7,7 @@ import type {
   PlacedItem,
   Poop,
   Visitor,
+  YardFind,
   Zone,
 } from './types';
 
@@ -89,6 +92,15 @@ export type SimEvents = {
   /** A Real Estate purchase other than a house upgrade. */
   realEstateBought: { kind: 'room' | 'petSlot' | 'storage' | 'color' };
   caughtUp: OfflineSummary;
+  /** Starter goals (early-game pass). */
+  goalReady: { goalId: string };
+  goalClaimed: { goalId: string; reward: GoalReward };
+  goalsCompleted: { reward: GoalReward };
+  /** Yard finds. */
+  findAppeared: { find: YardFind };
+  findCollected: { find: YardFind; coins: number };
+  findGone: { find: YardFind };
+  dailyGiftOpened: { reward: DailyGiftReward };
   /** Something in the state may have changed (a tick ran or a command was called). */
   changed: undefined;
 };

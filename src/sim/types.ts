@@ -147,6 +147,44 @@ export interface WorldState {
   /** `${speciesId}:${variantId}`, plus `${speciesId}:sparkle`. */
   discoveredDex: string[];
   settings: GameSettings;
+  /** A new player's quick start (save v7). */
+  welcome: WelcomeState;
+  /** Starter goals (save v7). */
+  goals: GoalsState;
+  /** Little things to tap in the yard (save v7). */
+  finds: YardFind[];
+  nextFindAt: Ms;
+  /** Daily present: the local day (YYYY-MM-DD) it was last opened (save v7). */
+  dailyGift: { lastDay: string };
+}
+
+/** A special pick for one of a new player's first visitors. */
+export type WelcomeSurprise = 'none' | 'pregnant' | 'uncommon';
+
+/** A new player's quick start: early visitors come faster, and the first sales come sooner. */
+export interface WelcomeState {
+  /** Gaps between visitors that are still short. */
+  fastVisitorsLeft: number;
+  /** Animals that can still be sold after the short wait. */
+  quickHoldsLeft: number;
+  /** Used up in order, one per visitor. */
+  surprises: WelcomeSurprise[];
+}
+
+export interface GoalsState {
+  /** goalId -> count so far (capped at the goal's target). */
+  progress: Record<string, number>;
+  /** Goals whose reward was collected. */
+  claimed: string[];
+}
+
+export type FindKind = 'coin' | 'clover' | 'butterfly';
+
+export interface YardFind {
+  id: string;
+  kind: FindKind;
+  position: Vec2;
+  expiresAt: Ms;
 }
 
 export interface SimMeta {

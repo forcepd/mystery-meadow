@@ -35,6 +35,7 @@ export type AppEvents = {
       | 'settings'
       | 'training'
       | 'petWardrobe'
+      | 'goals'
       | null;
     incomingId?: string;
     /** The animal a training or pet-wardrobe screen is for. */

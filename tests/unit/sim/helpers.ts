@@ -14,9 +14,13 @@ export interface Harness {
   clock: FakeClock;
 }
 
-export function newSim(seed = 1): Harness {
+/**
+ * A new game without the new-player quick start, so tests of other rules see the plain
+ * timings. Tests of the quick start pass `welcome = true`.
+ */
+export function newSim(seed = 1, welcome = false): Harness {
   const clock = new FakeClock(START);
-  return { sim: GameSim.newGame({ clock, seed }), clock };
+  return { sim: GameSim.newGame({ clock, seed, welcome }), clock };
 }
 
 /** Plays online for `ms`, updating every `stepMs` like a running app. */

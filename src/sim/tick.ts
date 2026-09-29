@@ -1,6 +1,7 @@
 import { BALANCE } from '../config/balance';
 import { emptySummary, hours, seconds, type SimContext } from './context';
 import { tickFeeding } from './systems/feeding';
+import { tickFinds } from './systems/finds';
 import { tickHelpers } from './systems/helpers';
 import { tickLifecycle } from './systems/lifecycle';
 import { tickCareSamples, tickNeeds } from './systems/needs';
@@ -30,6 +31,7 @@ export function runTick(ctx: SimContext, t: Ms): void {
   tickVisitorTimer(ctx, t);
   tickGate(ctx, t);
   tickWander(ctx, t);
+  tickFinds(ctx, t);
   ctx.state.meta.lastSeenAt = t;
 }
 

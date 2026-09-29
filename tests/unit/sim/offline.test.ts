@@ -170,6 +170,7 @@ describe('shiftWorld', () => {
     state.world.animals.push(full);
     state.world.gateQueue.push(makeVisitor(state));
     state.world.poops.push({ id: 'p', zone: 'yard', position: { x: 0, y: 0 }, createdAt: 7 });
+    state.world.finds.push({ id: 'f', kind: 'coin', position: { x: 0, y: 0 }, expiresAt: 8 });
     const before = structuredClone(state.world);
     shiftWorld(state.world, 1000);
 

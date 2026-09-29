@@ -276,8 +276,16 @@ describe('all four tiers are reachable (Phase 7 done-when)', () => {
     const [b, f, m] = reached.map(([, h]) => h!);
     expect(b).toBeLessThan(f!);
     expect(f).toBeLessThan(m!);
-    // DESIGN 15.1: the first upgrade takes a few hours of play.
-    expect(b).toBeGreaterThan(1.5);
-    expect(b).toBeLessThan(6);
+  });
+
+  it('the first upgrade takes a few hours of play, on average (DESIGN 15.1)', () => {
+    // Averaged, so one lucky early Legendary can't decide it. Includes the new-player quick start.
+    const seeds = [1, 2, 3, 4, 5, 6, 7, 8];
+    const avg =
+      seeds
+        .map((seed) => runEconomy({ hours: 12, seed, spend: true }).hoursToReach.bungalow ?? 12)
+        .reduce((a, b) => a + b, 0) / seeds.length;
+    expect(avg).toBeGreaterThan(1.5);
+    expect(avg).toBeLessThan(6);
   });
 });

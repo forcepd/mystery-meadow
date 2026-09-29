@@ -305,7 +305,7 @@ describe('migration v4 -> v5 (Phase 8)', () => {
 
   it('gives the profile the starter avatar, empty outfits, a finished tutorial, and a log', () => {
     const out = migrate(v4Save());
-    expect(out.schemaVersion).toBe(6);
+    expect(out.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
     expect(out.profile).toEqual({ ...DEFAULT_PROFILE, id: 'p1', username: 'Sunny_Fox' });
     expect(out.activity).toEqual([]);
   });
@@ -337,7 +337,7 @@ describe('migration v5 -> v6 (Phase 10)', () => {
     const raw = v5Save();
     raw.world.settings.musicVolume = 0.3;
     const out = migrate(raw);
-    expect(out.schemaVersion).toBe(6);
+    expect(out.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
     expect(out.world.settings.muted).toBe(false);
     expect(out.world.settings.musicVolume).toBe(0.3);
   });
@@ -347,5 +347,41 @@ describe('migration v5 -> v6 (Phase 10)', () => {
     const sim = GameSim.fromState(toSimState(save), new FakeClock(save.meta.lastSeenAt));
     expect(sim.updateSettings({ muted: true }).ok).toBe(true);
     expect(sim.state.world.settings.muted).toBe(true);
+  });
+});
+
+describe('migration v6 -> v7 (early-game pass)', () => {
+  /** A Phase 10 save: no quick start, goals, finds, or daily present yet. */
+  function v6Save() {
+    const save = toSaveFile(profile, newSim().sim.toState());
+    const world = { ...save.world } as Partial<typeof save.world>;
+    delete world.welcome;
+    delete world.goals;
+    delete world.finds;
+    delete world.nextFindAt;
+    delete world.dailyGift;
+    return { ...save, schemaVersion: 6, world };
+  }
+
+  it('an existing game skips the quick start, starts goals fresh, and has a present waiting', () => {
+    const raw = v6Save();
+    const out = migrate(raw);
+    expect(out.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+    expect(out.world.welcome).toEqual({ fastVisitorsLeft: 0, quickHoldsLeft: 0, surprises: [] });
+    expect(out.world.goals).toEqual({ progress: {}, claimed: [] });
+    expect(out.world.finds).toEqual([]);
+    expect(out.world.nextFindAt).toBe(raw.meta.lastSeenAt + 2 * 60_000);
+    expect(out.world.dailyGift).toEqual({ lastDay: '' });
+  });
+
+  it('a migrated v6 save loads, opens its present, and gets yard finds', () => {
+    const save = migrate(v6Save());
+    const clock = new FakeClock(save.meta.lastSeenAt);
+    const sim = GameSim.fromState(toSimState(save), clock);
+    expect(sim.dailyGiftReady()).toBe(true);
+    expect(sim.openDailyGift().ok).toBe(true);
+    clock.advance(3 * 60_000);
+    sim.update();
+    expect(sim.state.world.finds.length).toBe(1);
   });
 });

@@ -5,11 +5,20 @@ import type { GameSession } from '../../bridge/gameSession';
 import { BALANCE } from '../../config/balance';
 import { HOUSE_COLORS } from '../../config/houseColors';
 import { TEXT_RESOLUTION } from '../constants';
-import { GATE_ENTRY, HOUSE_DOOR, LAYOUT, gateSlot, zoneToWorld } from '../layout';
+import {
+  GATE_ENTRY,
+  HOUSE_DOOR,
+  HUD_COINS,
+  LAYOUT,
+  gateSlot,
+  yardToWorld,
+  zoneToWorld,
+} from '../layout';
 
 /** Where Scoop Bot waits between jobs: by the fence, left of the gate. */
 const SCOOP_PARK = { x: 1040, y: LAYOUT.fenceY + 70 };
 import { drawHouse, drawYard } from '../sprites/drawYard';
+import { FindSprite } from '../sprites/FindSprite';
 import { VisitorSprite } from '../sprites/VisitorSprite';
 import { ZoneScene } from './ZoneScene';
 
@@ -21,6 +30,9 @@ export class YardScene extends ZoneScene {
   protected readonly zone = 'yard';
   private readonly visitors = new Map<string, VisitorSprite>();
   private readonly leftGate = new Set<string>();
+  private readonly finds = new Map<string, FindSprite>();
+  /** Finds the player just tapped (vs. ones that floated away). */
+  private readonly collected = new Set<string>();
   private house!: Phaser.GameObjects.Graphics;
   private houseLook = '';
   /** Scoop Bot (placeholder: an emoji robot), shown once bought. Parks by the fence. */
@@ -56,6 +68,14 @@ export class YardScene extends ZoneScene {
         if (isSparkle) this.fx.banner(sprite.x, sprite.y - 150, '✦ Sparkle! ✦', '#c2489a');
         else if (rarity === 'epic' || rarity === 'legendary')
           this.fx.banner(sprite.x, sprite.y - 150, `${style.label}!`, style.color);
+      }),
+      events.on('findCollected', ({ find, coins }) => {
+        this.collected.add(find.id);
+        const sprite = this.finds.get(find.id);
+        if (!sprite) return;
+        this.fx.floatText(sprite.x, sprite.y - 50, `+${coins} 🪙`, '#c98a00', 30);
+        this.fx.burst(sprite.x, sprite.y, [0xffd84d, 0xffffff, 0x9ff0c8], 8);
+        this.fx.coinShower(sprite.x, sprite.y, HUD_COINS, Math.min(coins, 5));
       }),
       events.on('poopCleaned', ({ poop, by }) => {
         if (by === 'scoopBot' && poop.zone === 'yard')
@@ -123,6 +143,29 @@ export class YardScene extends ZoneScene {
     }
     this.syncScoopBot();
     this.reconcileVisitors();
+    this.reconcileFinds();
+  }
+
+  /** Coins, clovers, and butterflies to tap (early-game pass). */
+  private reconcileFinds(): void {
+    const present = new Set<string>();
+    for (const find of this.session.sim.state.world.finds) {
+      present.add(find.id);
+      if (this.finds.has(find.id)) continue;
+      const sprite = new FindSprite(this, find, yardToWorld(find.position), this.reducedMotion);
+      sprite.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => {
+        if (!this.decorating) this.session.sim.collectFind(find.id);
+      });
+      this.finds.set(find.id, sprite);
+    }
+    for (const [id, sprite] of this.finds) {
+      if (present.has(id)) continue;
+      this.finds.delete(id);
+      if (this.collected.delete(id)) sprite.collect();
+      else sprite.fadeAway();
+    }
+    // Hidden while decorating, like the animals fade.
+    for (const sprite of this.finds.values()) sprite.setVisible(!this.decorating);
   }
 
   private reconcileVisitors(): void {

@@ -76,7 +76,7 @@ export abstract class ZoneScene extends Phaser.Scene {
   protected initialized = false;
 
   // Decorate mode.
-  private decorating = false;
+  protected decorating = false;
   private pickItemId: string | null = null;
   private selectedPlacedId: string | null = null;
   private itemDrag: ItemDrag | null = null;

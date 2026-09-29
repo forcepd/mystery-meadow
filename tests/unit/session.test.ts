@@ -105,6 +105,34 @@ describe('GameSession', () => {
     expect(file.world.petStorage[0]!.animal.id).toBe(id);
   });
 
+  it('saves right after a find is tapped, a present is opened, and a goal is collected', async () => {
+    const { session, store, source } = await start();
+    playFor(session, source, BALANCE.finds.firstAfterMinutes * MIN + SEC);
+    source.advance(24 * HOUR);
+    session.visible();
+    await session.save();
+    const set = vi.spyOn(store, 'set');
+    const savesFor = async (run: () => void) => {
+      const before = set.mock.calls.length;
+      run();
+      await session.save(); // Waits for the queued save, then saves once more.
+      return set.mock.calls.length - before - 1;
+    };
+    expect(
+      await savesFor(() => session.sim.collectFind(session.sim.state.world.finds[0]!.id)),
+    ).toBe(1);
+    expect(await savesFor(() => session.sim.openDailyGift())).toBe(1);
+    debugSpawnVisitor(session.sim, { speciesId: 'bunny', pregnant: false });
+    session.sim.revealVisitor(session.sim.state.world.gateQueue[0]!.id);
+    session.sim.rename(session.sim.state.world.animals[0]!.id, 'Pip');
+    await session.save(); // The rename's own save.
+    expect(await savesFor(() => session.sim.claimGoal('name1'))).toBe(1);
+    const file = await saved(store);
+    expect(file.world.finds).toHaveLength(0);
+    expect(file.world.dailyGift.lastDay).not.toBe('');
+    expect(file.world.goals.claimed).toEqual(['name1']);
+  });
+
   it('saves when hidden and treats hidden time as offline when visible again', async () => {
     const { session, source, store } = await start();
     await session.hidden();

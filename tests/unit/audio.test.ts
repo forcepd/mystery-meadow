@@ -127,6 +127,16 @@ describe('which event makes which sound', () => {
     expect(sfxForEvent('animalCured', { animal, illnessId: 'sore_paw' })).toBe('fanfare');
   });
 
+  it('the early-game extras have sounds too', () => {
+    expect(sfxForEvent('goalReady', { goalId: 'pet5' })).toBe('gem');
+    expect(sfxForEvent('goalClaimed', { goalId: 'pet5', reward: { coins: 15 } })).toBe('coin');
+    expect(sfxForEvent('goalsCompleted', { reward: {} })).toBe('fanfare');
+    const find = { id: 'f', kind: 'coin' as const, position: { x: 0, y: 0 }, expiresAt: 0 };
+    expect(sfxForEvent('findCollected', { find, coins: 3 })).toBe('coin');
+    expect(sfxForEvent('findGone', { find })).toBeNull();
+    expect(sfxForEvent('dailyGiftOpened', { reward: { coins: 40, gems: 0 } })).toBe('fanfare');
+  });
+
   it('stays quiet for everything else', () => {
     expect(sfxForEvent('changed', undefined)).toBeNull();
     expect(sfxForEvent('coinsChanged', { coins: 1, delta: 1 })).toBeNull();

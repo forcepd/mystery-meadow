@@ -4,6 +4,7 @@ import type { CommandResult, Ms, Visitor, VisitorRoll } from '../types';
 import { createAnimal, discover, randomPosition } from './animals';
 import { freeCapacity, isCrowded, visitorIntervalMinutes } from './housing';
 import { rollVisitor } from './rarity';
+import { applyQuickHold, applySurprise, takeVisitorGap } from './welcome';
 
 /**
  * DESIGN 6.1 and 14. Online: the timer spawns a visitor at the gate unless the yard is Crowded
@@ -14,7 +15,7 @@ export function tickVisitorTimer(ctx: SimContext, t: Ms): void {
   const world = ctx.state.world;
   while (t >= world.nextVisitorAt) {
     const firedAt = world.nextVisitorAt;
-    world.nextVisitorAt += minutes(visitorIntervalMinutes(world));
+    world.nextVisitorAt += minutes(takeVisitorGap(ctx, visitorIntervalMinutes(world)));
     if (ctx.offline) {
       const queue = world.gateQueue.length;
       if (queue < BALANCE.offline.maxGateQueue && queue < freeCapacity(world)) {
@@ -31,7 +32,7 @@ export function tickVisitorTimer(ctx: SimContext, t: Ms): void {
 export function spawnVisitor(
   ctx: SimContext,
   at: Ms,
-  roll: VisitorRoll = rollVisitor(ctx.rng, ctx.state.world),
+  roll: VisitorRoll = applySurprise(ctx, rollVisitor(ctx.rng, ctx.state.world)),
 ): Visitor {
   const visitor: Visitor = {
     id: nextId(ctx, 'v'),
@@ -78,6 +79,7 @@ export function admitVisitors(ctx: SimContext, t: Ms): void {
         isBaby: false,
         litterSize: roll.litterSize,
       });
+      applyQuickHold(ctx, animal, t);
       world.animals.push(animal);
       ctx.emit('visitorEntered', { visitorId: visitor.id, animal });
     } else {

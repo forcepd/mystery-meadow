@@ -94,6 +94,11 @@ import {
 } from './systems/vet';
 import { canSell, findAnimal, salePrice, sell } from './systems/selling';
 import { revealVisitor } from './systems/visitors';
+import { dailyGiftReady, openDailyGift, type DailyGiftReward } from './systems/dailyGift';
+import { collectFind } from './systems/finds';
+import { claimGoal, readyGoalCount, trackGoals } from './systems/goals';
+import { finishedWelcome, newWelcome } from './systems/welcome';
+import { dayKey } from './systems/tricks';
 import { runOffline, runOnline } from './tick';
 import type {
   Animal,
@@ -118,6 +123,11 @@ export interface NewGameOptions {
    * usual interval, and the starting bowl is empty so the tutorial can teach filling it.
    */
   tutorial?: boolean;
+  /**
+   * A new player's quick start (early-game pass): faster first visitors, sooner first sales,
+   * guaranteed surprises. On by default; unit tests of other rules turn it off.
+   */
+  welcome?: boolean;
 }
 
 /**
@@ -141,13 +151,15 @@ export class GameSim {
       offline: false,
       summary: emptySummary(),
       emit: (event, payload) => {
+        // Starter goals count the player's actions (which only happen online anyway).
+        trackGoals(this.ctx, event, payload);
         if (!this.ctx.offline) this.events.emit(event, payload);
       },
     };
     this.crowded = isCrowded(state.world);
   }
 
-  static newGame({ clock, seed, houseColor, tutorial }: NewGameOptions): GameSim {
+  static newGame({ clock, seed, houseColor, tutorial, welcome = true }: NewGameOptions): GameSim {
     const now = clock.now();
     const rng = new Rng(seed);
     const cottage = BALANCE.houseTiers[0];
@@ -173,7 +185,14 @@ export class GameSim {
         petStorage: [],
         gateQueue: [],
         poops: [],
-        nextVisitorAt: tutorial ? now : now + minutes(cottage.visitorMinutes),
+        nextVisitorAt: tutorial
+          ? now
+          : now +
+            minutes(
+              welcome
+                ? Math.min(cottage.visitorMinutes, BALANCE.welcome.fastVisitorMinutes)
+                : cottage.visitorMinutes,
+            ),
         discoveredDex: [],
         settings: {
           offlineProgress: true,
@@ -184,6 +203,15 @@ export class GameSim {
           muted: false,
           reducedMotion: false,
         },
+        // The first visitor (right away, or after one short gap) is the first of the quick ones.
+        welcome: welcome
+          ? { ...newWelcome(), fastVisitorsLeft: BALANCE.welcome.fastVisitors - 1 }
+          : finishedWelcome(),
+        goals: { progress: {}, claimed: [] },
+        finds: [],
+        nextFindAt: now + minutes(BALANCE.finds.firstAfterMinutes),
+        // The first present comes tomorrow: day one has the tutorial and goals already.
+        dailyGift: { lastDay: dayKey(now) },
       },
       meta: {
         createdAt: now,
@@ -298,6 +326,24 @@ export class GameSim {
   vetTreat(animalId: string, treatmentId: string): VetTreatResult {
     this.update();
     const result = vetTreat(this.ctx, animalId, treatmentId, this.now());
+    this.afterChange(true);
+    return result;
+  }
+
+  /** Collects a finished starter goal's reward. */
+  claimGoal(goalId: string): CommandResult {
+    return this.command(() => claimGoal(this.ctx, goalId));
+  }
+
+  /** Taps a coin, clover, or butterfly in the yard. */
+  collectFind(findId: string): CommandResult {
+    return this.command(() => collectFind(this.ctx, findId));
+  }
+
+  /** Opens today's present. */
+  openDailyGift(): { ok: true; reward: DailyGiftReward } | { ok: false; reason: string } {
+    this.update();
+    const result = openDailyGift(this.ctx, this.now());
     this.afterChange(true);
     return result;
   }
@@ -458,6 +504,16 @@ export class GameSim {
 
   capacity(): number {
     return totalCapacity(this.ctx.state.world);
+  }
+
+  /** Starter goals done but not collected. */
+  readyGoalCount(): number {
+    return readyGoalCount(this.ctx.state.world);
+  }
+
+  /** A daily present is waiting to be opened. */
+  dailyGiftReady(): boolean {
+    return dailyGiftReady(this.ctx.state.world, this.now());
   }
 
   animalCount(): number {

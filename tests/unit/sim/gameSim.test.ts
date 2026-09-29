@@ -85,9 +85,11 @@ describe('economy harness (DESIGN 21, Phase 1 done-when)', () => {
     const avg = (bot: 'caring' | 'neglect') => {
       let coins = 0;
       let care = 0;
-      const runs = 8;
+      const runs = 24; // Enough seeds that luck evens out.
       for (let seed = 1; seed <= runs; seed++) {
-        const r = runEconomy({ hours: 12, seed, bot });
+        // Without the new-player quick start: this compares care, and the quick start is the
+        // same for both bots.
+        const r = runEconomy({ hours: 12, seed, bot, welcome: false });
         coins += r.coinsPerHour;
         care += r.avgCareMultiplier;
       }

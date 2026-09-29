@@ -23,7 +23,7 @@ test.describe('first playable yard', () => {
     await expect(page.getByTestId('coins')).toHaveText('100');
     await expect(page.getByTestId('gems')).toHaveText('50');
     await expect(page.getByTestId('capacity')).toHaveText('🐾0/6');
-    await expect(page.getByTestId('next-visitor')).toContainText(/Next visitor in (10:00|9:\d\d)/);
+    await expect(page.getByTestId('next-visitor')).toContainText(/Next visitor in (2:00|1:\d\d)/);
   });
 
   test('tapping a mystery visitor reveals it and it walks into the yard', async ({ page }) => {

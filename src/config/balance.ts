@@ -46,6 +46,43 @@ export const BALANCE = deepFreeze({
   },
 
   holdMinutes: 20,
+
+  // [DEFAULT, early-game pass] A new player's quick start. The first `fastVisitors` gaps between
+  // visitors are `fastVisitorMinutes`; the first `quickHolds` animals that come in can be sold
+  // after `quickHoldMinutes`; and each of the first visitors gets its surprise, in order (the
+  // tutorial visitor first): the 2nd is always expecting babies, the 3rd at least Uncommon.
+  welcome: {
+    fastVisitors: 5,
+    fastVisitorMinutes: 2,
+    quickHolds: 3,
+    quickHoldMinutes: 5,
+    surprises: ['none', 'pregnant', 'uncommon'],
+    surpriseMinLitter: 2,
+  },
+
+  // [DEFAULT, early-game pass] Little things to tap in the yard, now and then (online only).
+  finds: {
+    firstAfterMinutes: 5,
+    minMinutes: 2,
+    maxMinutes: 4,
+    lifetimeMinutes: 3,
+    maxAtOnce: 2,
+    kinds: {
+      coin: { weight: 5, coins: 3 },
+      butterfly: { weight: 3, coins: 2 },
+      clover: { weight: 2, coins: 6 },
+    },
+  },
+
+  // [DEFAULT, early-game pass] A present on the first play of each (local) day. Not on day one.
+  dailyGift: {
+    coins: [30, 40, 50, 60],
+    itemChance: 0.25,
+    items: ['carrot_patch', 'bird_bath', 'toy_basket', 'flower_garden'],
+    gemChance: 0.2,
+    gems: 5,
+    gemBonusCoins: 20,
+  },
   babyGrowMinutes: 20,
   newBadgeSeconds: 60,
 

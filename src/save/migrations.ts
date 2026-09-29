@@ -112,6 +112,28 @@ export const MIGRATIONS: Readonly<Record<number, Migration>> = {
       world: { ...world, settings: { muted: false, ...world.settings } },
     };
   },
+
+  /**
+   * v6 -> v7 (early-game pass): the new-player quick start is already over for an existing game;
+   * starter goals begin empty; the first yard find comes 2 minutes after loading; and a daily
+   * present is waiting (the last one "opened" never). Literal values on purpose (see v1 -> v2).
+   */
+  6: (save) => {
+    const world = save.world as Record<string, unknown>;
+    const meta = save.meta as { lastSeenAt: number };
+    return {
+      ...save,
+      schemaVersion: 7,
+      world: {
+        welcome: { fastVisitorsLeft: 0, quickHoldsLeft: 0, surprises: [] },
+        goals: { progress: {}, claimed: [] },
+        finds: [],
+        nextFindAt: meta.lastSeenAt + 2 * 60_000,
+        dailyGift: { lastDay: '' },
+        ...world,
+      },
+    };
+  },
 };
 
 export class SaveError extends Error {

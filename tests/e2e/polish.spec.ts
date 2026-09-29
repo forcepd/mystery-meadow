@@ -201,6 +201,9 @@ test.describe('accessibility pass (DESIGN 17.5)', () => {
     await press(page, page.getByRole('button', { name: /my style/i }));
     await audit(page, 'style');
     await close();
+    await press(page, page.getByTestId('goals-button'));
+    await audit(page, 'goals');
+    await close();
 
     await tapWorld(page, animalTapPoint({ x: 0.5, y: 0.5 }));
     const card = page.getByRole('complementary', { name: /bunny card/i });

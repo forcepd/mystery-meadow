@@ -31,6 +31,8 @@ export interface EconomyOptions {
    * reserve. Off by default (the bot then never spends, for clean earnings numbers).
    */
   spend?: boolean;
+  /** The new-player quick start (early-game pass). On by default, like a real new game. */
+  welcome?: boolean;
 }
 
 export interface EconomyReport {
@@ -66,7 +68,7 @@ export interface EconomyReport {
 export function runEconomy(options: EconomyOptions): EconomyReport {
   const start = Date.UTC(2026, 0, 1);
   const clock = new FakeClock(start);
-  const sim = GameSim.newGame({ clock, seed: options.seed });
+  const sim = GameSim.newGame({ clock, seed: options.seed, welcome: options.welcome ?? true });
   const step = (options.botIntervalSeconds ?? 1) * 1000;
   const bot = options.bot ?? 'caring';
   let careSum = 0;
