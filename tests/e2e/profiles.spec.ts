@@ -98,6 +98,8 @@ test.describe('profiles, onboarding, and the tutorial', () => {
     await tapWorld(page, poopTapPoint(save.world.poops[0]!.position));
     await expect(coach(page)).toHaveAttribute('data-step', 'card');
 
+    // The coach tells the real wait: a new player's first animals are ready in 5 minutes.
+    await expect(coach(page)).toContainText(/In [1-5] minutes? it’s ready for a new home!/);
     save = await readStore<SaveFile>(page, `profile:${id}`);
     const animal = save.world.animals[0]!;
     await tapWorld(page, animalTapPoint(animal.position));
@@ -108,7 +110,7 @@ test.describe('profiles, onboarding, and the tutorial', () => {
     await expect(coach(page)).toBeHidden();
     await press(page, card.getByRole('button', { name: 'Close' }));
 
-    // 20 minutes later it's ready for a new home. (If the visitor was pregnant, its babies
+    // Well past the wait, it's ready for a new home. (If the visitor was pregnant, its babies
     // sit right next to it and aren't ready yet: try each animal until one can be sold.)
     await page.clock.fastForward('21:00');
     await expect(page.getByTestId('coins')).toHaveText('100');

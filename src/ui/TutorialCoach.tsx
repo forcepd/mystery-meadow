@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { appBus } from '../bridge/appBus';
-import { displayName } from '../bridge/describe';
+import { displayName, inMinutes } from '../bridge/describe';
 import common from './common.module.css';
 import { useSim } from './session';
 import styles from './TutorialCoach.module.css';
@@ -70,7 +70,9 @@ export function TutorialCoach() {
       : `Yum! Keep an eye on ${name}…`;
   } else {
     icon = '👆';
-    text = `Tap ${name} to see its card. In 20 minutes it’s ready for a new home!`;
+    // The real wait (new players' first animals are ready sooner, BALANCE.welcome).
+    const wait = animal ? inMinutes(animal.holdUntil - sim.now()) : 'Soon';
+    text = `Tap ${name} to see its card. ${wait} it’s ready for a new home!`;
   }
 
   return (

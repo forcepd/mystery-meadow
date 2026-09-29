@@ -1219,3 +1219,4 @@ The start is much busier, as intended. But because the yard fills to capacity ab
 
 - On this Mac's WebKit, the 🪙 emoji draws as a grey coin. That comes from the device's emoji font (it was already like this in toasts); iPads show a gold coin.
 - A find can land on top of an animal. The first tap then collects the find, and the second tap reaches the animal.
+- **The tutorial still said "In 20 minutes it's ready for a new home"** after the early-game pass made a new player's first animals ready in 5. The text was hardcoded. It now shows the animal's real wait ("In 5 minutes…", counting down), using `inMinutes()` in `bridge/describe.ts` (unit-tested). The onboarding e2e test checks it.

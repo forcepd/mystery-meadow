@@ -1,7 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { displayName, formatCountdown, speciesName } from '../../src/bridge/describe';
+import { displayName, formatCountdown, inMinutes, speciesName } from '../../src/bridge/describe';
 import { TOASTS } from '../../src/bridge/toasts';
 import { makeAnimal, makeVisitor, newSim } from './sim/helpers';
+
+describe('inMinutes', () => {
+  it('rounds up, says minute or minutes, and "Now" when the wait is over', () => {
+    expect(inMinutes(5 * 60_000)).toBe('In 5 minutes');
+    expect(inMinutes(4 * 60_000 + 1)).toBe('In 5 minutes');
+    expect(inMinutes(30_000)).toBe('In 1 minute');
+    expect(inMinutes(0)).toBe('Now');
+    expect(inMinutes(-1000)).toBe('Now');
+  });
+});
 
 describe('formatCountdown', () => {
   it.each([
