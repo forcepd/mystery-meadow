@@ -107,8 +107,11 @@ export interface GameSettings {
   offlineProgress: boolean;
   sicknessEnabled: boolean;
   dailyTrickGemCap: number;
+  /** 0..1 (DESIGN 16.3 volume sliders). */
   musicVolume: number;
   sfxVolume: number;
+  /** All sound off (save v6). */
+  muted: boolean;
   reducedMotion: boolean;
 }
 

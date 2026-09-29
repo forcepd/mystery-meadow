@@ -10,15 +10,17 @@ Every art, audio, and font asset shipped in the game is listed here with its sou
 
 ## Art
 
-| Asset                                                                         | Source                          | License       |
-| ----------------------------------------------------------------------------- | ------------------------------- | ------------- |
-| App icon / favicon (`public/icons/favicon.svg` and the PNGs rendered from it) | Original, made for this project | Project-owned |
-| Placeholder meadow scene and HUD shapes                                       | Original, drawn in code         | Project-owned |
-| Animals (all 21 species, colors, Sparkle), pet outfits, lures, furniture, and beds: parametric SVG in `src/art/` (Phase 10) | Original, drawn in code | Project-owned |
+| Asset                                                                                                                       | Source                          | License       |
+| --------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | ------------- |
+| App icon / favicon (`public/icons/favicon.svg` and the PNGs rendered from it)                                               | Original, made for this project | Project-owned |
+| Placeholder meadow scene and HUD shapes                                                                                     | Original, drawn in code         | Project-owned |
+| Animals (all 21 species, colors, Sparkle), pet outfits, lures, furniture, and beds: parametric SVG in `src/art/` (Phase 10) | Original, drawn in code         | Project-owned |
 
 ## Audio
 
-None yet (Phase 10).
+| Asset                                        | Source                                                                                                                         | License       |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------- |
+| Yard and house music, and every sound effect | Original. Synthesized live with Web Audio from the note and sound recipes in `src/audio/sounds.ts` (Phase 10). No audio files. | Project-owned |
 
 ## Code libraries (runtime)
 

@@ -305,7 +305,7 @@ describe('migration v4 -> v5 (Phase 8)', () => {
 
   it('gives the profile the starter avatar, empty outfits, a finished tutorial, and a log', () => {
     const out = migrate(v4Save());
-    expect(out.schemaVersion).toBe(5);
+    expect(out.schemaVersion).toBe(6);
     expect(out.profile).toEqual({ ...DEFAULT_PROFILE, id: 'p1', username: 'Sunny_Fox' });
     expect(out.activity).toEqual([]);
   });
@@ -321,5 +321,31 @@ describe('migration v4 -> v5 (Phase 8)', () => {
       profile: { id: 'x', username: 'X' },
     };
     expect(() => migrate(bad)).toThrow(SaveError);
+  });
+});
+
+describe('migration v5 -> v6 (Phase 10)', () => {
+  /** A Phase 8/9 save: settings have volumes but no mute switch. */
+  function v5Save() {
+    const save = toSaveFile(profile, newSim().sim.toState());
+    const settings = { ...save.world.settings } as Partial<typeof save.world.settings>;
+    delete settings.muted;
+    return { ...save, schemaVersion: 5, world: { ...save.world, settings } };
+  }
+
+  it('adds the mute switch, off, and keeps the volumes', () => {
+    const raw = v5Save();
+    raw.world.settings.musicVolume = 0.3;
+    const out = migrate(raw);
+    expect(out.schemaVersion).toBe(6);
+    expect(out.world.settings.muted).toBe(false);
+    expect(out.world.settings.musicVolume).toBe(0.3);
+  });
+
+  it('a migrated v5 save loads and can change its sound settings', () => {
+    const save = migrate(v5Save());
+    const sim = GameSim.fromState(toSimState(save), new FakeClock(save.meta.lastSeenAt));
+    expect(sim.updateSettings({ muted: true }).ok).toBe(true);
+    expect(sim.state.world.settings.muted).toBe(true);
   });
 });

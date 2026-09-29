@@ -1,3 +1,4 @@
+import { audio } from '../audio/AudioEngine';
 import { useCallback, useState } from 'react';
 import { appBus } from '../bridge/appBus';
 import { getAvatarItem } from '../config/avatarItems';
@@ -63,6 +64,7 @@ export function StyleScreen() {
       setMessage({ text: result.reason, ok: false });
       return;
     }
+    audio.play('purchase');
     setMessage({ text: `💎 It’s yours: ${getAvatarItem(itemId)!.name}!`, ok: true });
     // Wear the try-on right away once everything in it is owned.
     if (isValidLoadout(draft, session.profile.ownedAvatarItems)) session.wear(draft);

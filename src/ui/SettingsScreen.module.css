@@ -26,6 +26,36 @@
   accent-color: var(--color-accent-dark);
 }
 
+.slider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.slider > span:first-child {
+  min-width: 110px;
+}
+
+.slider input {
+  flex: 1;
+  max-width: 320px;
+  height: 48px;
+  accent-color: var(--color-accent-dark);
+  touch-action: pan-x;
+}
+
+.slider input:disabled {
+  opacity: 0.4;
+}
+
+.sliderValue {
+  min-width: 36px;
+  text-align: right;
+}
+
 .number {
   display: flex;
   align-items: center;

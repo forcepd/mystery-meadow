@@ -1,3 +1,5 @@
+import { audio } from '../audio/AudioEngine';
+import { CUE_NOTES, noteHz } from '../audio/sounds';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { appBus } from '../bridge/appBus';
 import { displayName, formatCountdown } from '../bridge/describe';
@@ -24,6 +26,11 @@ const CUE_NAME: Record<TrainingCue, string> = {
   down: 'Down',
   tap: 'Star',
 };
+/** Each cue has its own note, so the sequence can be learned by ear too. */
+function playCue(cue: TrainingCue): void {
+  audio.play('cue', noteHz(CUE_NOTES[cue]));
+}
+
 /** How long each cue lights up while the animal shows the sequence. */
 const SHOW_MS = 650;
 const GAP_MS = 250;
@@ -93,7 +100,10 @@ export function TrainingScreen() {
     sequence.forEach((_, i) => {
       timers.current.push(
         setTimeout(
-          () => setPhase({ kind: 'show', trickId, sequence, lit: i }),
+          () => {
+            setPhase({ kind: 'show', trickId, sequence, lit: i });
+            playCue(sequence[i]!);
+          },
           400 + i * (SHOW_MS + GAP_MS),
         ),
         setTimeout(
@@ -114,6 +124,7 @@ export function TrainingScreen() {
     if (phase.kind !== 'repeat') return;
     const { trickId, sequence, done } = phase;
     if (sequence[done] !== cue) {
+      audio.play('oops');
       const r = sim.trainSession(animal.id, trickId, false);
       setPhase({
         kind: 'result',
@@ -124,6 +135,7 @@ export function TrainingScreen() {
       });
       return;
     }
+    playCue(cue);
     if (done + 1 < sequence.length) {
       setPhase({ ...phase, done: done + 1, lit: cue });
       return;

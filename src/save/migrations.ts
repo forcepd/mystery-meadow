@@ -98,6 +98,20 @@ export const MIGRATIONS: Readonly<Record<number, Migration>> = {
       activity: [],
     };
   },
+
+  /**
+   * v5 -> v6 (Phase 10, Audio): settings get a mute switch, off (sound was never playing before).
+   * Tricky two-illness vet cases (also Phase 10) only add an optional `sickness.secondIllnessId`,
+   * so there's nothing else to fill in.
+   */
+  5: (save) => {
+    const world = save.world as { settings: Record<string, unknown> };
+    return {
+      ...save,
+      schemaVersion: 6,
+      world: { ...world, settings: { muted: false, ...world.settings } },
+    };
+  },
 };
 
 export class SaveError extends Error {

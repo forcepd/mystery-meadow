@@ -24,7 +24,7 @@ import { backupFileName, makeBackup, readBackup } from '../../src/save/backup';
 import { DEVICE_KEY, DeviceManager, sortedProfiles } from '../../src/save/device';
 import { SaveError } from '../../src/save/migrations';
 import { MemoryStore, SaveManager } from '../../src/save/SaveManager';
-import { newProfile, toSaveFile } from '../../src/save/schema';
+import { CURRENT_SCHEMA_VERSION, newProfile, toSaveFile } from '../../src/save/schema';
 import { FakeClock } from '../../src/sim/clock';
 import { debugSpawnVisitor } from '../../src/sim/debugCommands';
 import { GameSim } from '../../src/sim/GameSim';
@@ -210,7 +210,7 @@ describe('backups', () => {
   it('upgrades old saves inside a backup', () => {
     const old = { ...toSaveFile(DEFAULT_PROFILE, newSim().sim.toState()), schemaVersion: 4 };
     const [out] = readBackup(JSON.stringify(makeBackup([old], START)));
-    expect(out!.schemaVersion).toBe(5);
+    expect(out!.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
   });
 
   it.each([

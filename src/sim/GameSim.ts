@@ -181,6 +181,7 @@ export class GameSim {
           dailyTrickGemCap: BALANCE.tricks.dailyGemCap,
           musicVolume: 1,
           sfxVolume: 1,
+          muted: false,
           reducedMotion: false,
         },
       },

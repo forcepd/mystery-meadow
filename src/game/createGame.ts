@@ -8,6 +8,8 @@ import { YardScene } from './scenes/YardScene';
 export function createGame(parent: HTMLElement, session: GameSession): Phaser.Game {
   return new Phaser.Game({
     type: Phaser.AUTO, // WebGL, falling back to Canvas
+    // Sound is ours (src/audio), so Phaser never opens a second audio context.
+    audio: { noAudio: true },
     parent,
     backgroundColor: COLORS.grass,
     scale: {

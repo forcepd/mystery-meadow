@@ -51,6 +51,23 @@ export function SettingsScreen() {
         {view === 'settings' && (
           <>
             <Toggle
+              label="🔇 All sounds off"
+              checked={settings.muted}
+              onChange={(v) => sim.updateSettings({ muted: v })}
+            />
+            <Slider
+              label="🎵 Music"
+              value={settings.musicVolume}
+              disabled={settings.muted}
+              onChange={(v) => sim.updateSettings({ musicVolume: v })}
+            />
+            <Slider
+              label="🔊 Sounds"
+              value={settings.sfxVolume}
+              disabled={settings.muted}
+              onChange={(v) => sim.updateSettings({ sfxVolume: v })}
+            />
+            <Toggle
               label="🐢 Less motion (calmer animations)"
               checked={settings.reducedMotion}
               onChange={(v) => sim.updateSettings({ reducedMotion: v })}
@@ -85,6 +102,39 @@ export function SettingsScreen() {
         {view === 'parent' && <ParentMode />}
       </div>
     </div>
+  );
+}
+
+/** A 0..1 volume shown as 0..10 steps, big enough for small fingers. */
+function Slider({
+  label,
+  value,
+  disabled,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  disabled: boolean;
+  onChange: (value: number) => void;
+}) {
+  const steps = Math.round(value * 10);
+  return (
+    <label className={s.slider}>
+      <span>{label}</span>
+      <input
+        type="range"
+        min={0}
+        max={10}
+        step={1}
+        value={steps}
+        disabled={disabled}
+        aria-valuetext={steps === 0 ? 'Off' : `${steps} of 10`}
+        onChange={(e) => onChange(Number(e.target.value) / 10)}
+      />
+      <span className={s.sliderValue} aria-hidden="true">
+        {steps === 0 ? 'Off' : steps}
+      </span>
+    </label>
   );
 }
 

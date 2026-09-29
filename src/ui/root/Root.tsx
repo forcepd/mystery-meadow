@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { GameSession } from '../../bridge/gameSession';
+import { connectAudio } from '../../bridge/audioBridge';
 import { runSession } from '../../bridge/runSession';
 import { makePin } from '../../profile/pin';
 import { DeviceManager, sortedProfiles, type DeviceRecord } from '../../save/device';
@@ -105,7 +106,13 @@ export function Root({ store }: { store: KeyValueStore }) {
               r.profiles = r.profiles.map((p) => (p.id === session.profile.id ? summary() : p));
             }),
         );
-        running.current = { session, stop: runSession(session), off };
+        const stopRun = runSession(session);
+        const stopAudio = connectAudio(session);
+        const stop = () => {
+          stopAudio();
+          stopRun();
+        };
+        running.current = { session, stop, off };
         setStage({ kind: 'playing', session });
       } catch (error) {
         console.error('Could not start the game', error);
