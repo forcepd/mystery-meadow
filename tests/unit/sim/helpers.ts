@@ -9,6 +9,12 @@ export const MIN = 60 * SEC;
 export const HOUR = 60 * MIN;
 export const DAY = 24 * HOUR;
 
+/**
+ * Time limit for tests that run the economy harness for many simulated hours and seeds. They take
+ * a few seconds here and about twice that on CI's machines, past Vitest's 5-second default.
+ */
+export const ECONOMY_TIMEOUT_MS = 30_000;
+
 export interface Harness {
   sim: GameSim;
   clock: FakeClock;

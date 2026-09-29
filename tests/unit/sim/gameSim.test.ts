@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { BALANCE } from '../../../src/config/balance';
 import { DEFAULT_HOUSE_COLOR } from '../../../src/config/houseColors';
 import { formatEconomyReport, runEconomy } from '../../../src/sim/harness/economy';
-import { HOUR, MIN, SEC, START, newSim, play } from './helpers';
+import { ECONOMY_TIMEOUT_MS, HOUR, MIN, SEC, START, newSim, play } from './helpers';
 
 describe('new game', () => {
   it('starts with the configured balances in a Cozy Cottage', () => {
@@ -81,38 +81,47 @@ describe('economy harness (DESIGN 21, Phase 1 done-when)', () => {
     expect(text).toContain('Coins earned');
   });
 
-  it('pays a caring player more than a neglectful one (Phase 3 done-when)', () => {
-    const avg = (bot: 'caring' | 'neglect') => {
-      let coins = 0;
-      let care = 0;
-      const runs = 24; // Enough seeds that luck evens out.
-      for (let seed = 1; seed <= runs; seed++) {
-        // Without the new-player quick start: this compares care, and the quick start is the
-        // same for both bots.
-        const r = runEconomy({ hours: 12, seed, bot, welcome: false });
-        coins += r.coinsPerHour;
-        care += r.avgCareMultiplier;
-      }
-      return { coins: coins / runs, care: care / runs };
-    };
-    const caring = avg('caring');
-    const neglect = avg('neglect');
-    expect(caring.care).toBeGreaterThan(1.15);
-    expect(neglect.care).toBeLessThan(1.05);
-    expect(caring.coins).toBeGreaterThan(neglect.coins * 1.15);
-    // DESIGN 15.1 estimates ~500/hour at care x1.0; good care lands above it.
-    expect(neglect.coins).toBeGreaterThan(380);
-    expect(caring.coins).toBeLessThan(750);
-  });
+  it(
+    'pays a caring player more than a neglectful one (Phase 3 done-when)',
+    () => {
+      const avg = (bot: 'caring' | 'neglect') => {
+        let coins = 0;
+        let care = 0;
+        const runs = 24; // Enough seeds that luck evens out.
+        for (let seed = 1; seed <= runs; seed++) {
+          // Without the new-player quick start: this compares care, and the quick start is the
+          // same for both bots.
+          const r = runEconomy({ hours: 12, seed, bot, welcome: false });
+          coins += r.coinsPerHour;
+          care += r.avgCareMultiplier;
+        }
+        return { coins: coins / runs, care: care / runs };
+      };
+      const caring = avg('caring');
+      const neglect = avg('neglect');
+      expect(caring.care).toBeGreaterThan(1.15);
+      expect(neglect.care).toBeLessThan(1.05);
+      expect(caring.coins).toBeGreaterThan(neglect.coins * 1.15);
+      // DESIGN 15.1 estimates ~500/hour at care x1.0; good care lands above it.
+      expect(neglect.coins).toBeGreaterThan(380);
+      expect(caring.coins).toBeLessThan(750);
+    },
+    ECONOMY_TIMEOUT_MS,
+  );
 
-  it('reports sickness: neglected animals get sick more often', () => {
-    const sickCases = (bot: 'caring' | 'neglect') => {
-      let sick = 0;
-      for (let seed = 1; seed <= 6; seed++) sick += runEconomy({ hours: 12, seed, bot }).sickCases;
-      return sick;
-    };
-    const caring = sickCases('caring');
-    expect(caring).toBeGreaterThan(0);
-    expect(sickCases('neglect')).toBeGreaterThan(caring * 1.3);
-  });
+  it(
+    'reports sickness: neglected animals get sick more often',
+    () => {
+      const sickCases = (bot: 'caring' | 'neglect') => {
+        let sick = 0;
+        for (let seed = 1; seed <= 6; seed++)
+          sick += runEconomy({ hours: 12, seed, bot }).sickCases;
+        return sick;
+      };
+      const caring = sickCases('caring');
+      expect(caring).toBeGreaterThan(0);
+      expect(sickCases('neglect')).toBeGreaterThan(caring * 1.3);
+    },
+    ECONOMY_TIMEOUT_MS,
+  );
 });

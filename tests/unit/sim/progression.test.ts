@@ -2,7 +2,18 @@ import { describe, expect, it, vi } from 'vitest';
 import { BALANCE } from '../../../src/config/balance';
 import { runEconomy } from '../../../src/sim/harness/economy';
 import type { Animal, PlacedItem, SimState } from '../../../src/sim/types';
-import { HOUR, MIN, SEC, START, edit, makeAnimal, makeVisitor, newSim, play } from './helpers';
+import {
+  ECONOMY_TIMEOUT_MS,
+  HOUR,
+  MIN,
+  SEC,
+  START,
+  edit,
+  makeAnimal,
+  makeVisitor,
+  newSim,
+  play,
+} from './helpers';
 
 const FAR = START + 999 * HOUR;
 
@@ -268,24 +279,32 @@ describe('helpers', () => {
 });
 
 describe('all four tiers are reachable (Phase 7 done-when)', () => {
-  it('a player who saves up moves all the way to the Grand Manor', () => {
-    const r = runEconomy({ hours: 36, seed: 1, spend: true });
-    const reached = Object.entries(r.hoursToReach);
-    expect(reached.map(([id]) => id)).toEqual(['bungalow', 'farmhouse', 'manor']);
-    for (const [, h] of reached) expect(h).not.toBeNull();
-    const [b, f, m] = reached.map(([, h]) => h!);
-    expect(b).toBeLessThan(f!);
-    expect(f).toBeLessThan(m!);
-  });
+  it(
+    'a player who saves up moves all the way to the Grand Manor',
+    () => {
+      const r = runEconomy({ hours: 36, seed: 1, spend: true });
+      const reached = Object.entries(r.hoursToReach);
+      expect(reached.map(([id]) => id)).toEqual(['bungalow', 'farmhouse', 'manor']);
+      for (const [, h] of reached) expect(h).not.toBeNull();
+      const [b, f, m] = reached.map(([, h]) => h!);
+      expect(b).toBeLessThan(f!);
+      expect(f).toBeLessThan(m!);
+    },
+    ECONOMY_TIMEOUT_MS,
+  );
 
-  it('the first upgrade takes a few hours of play, on average (DESIGN 15.1)', () => {
-    // Averaged, so one lucky early Legendary can't decide it. Includes the new-player quick start.
-    const seeds = [1, 2, 3, 4, 5, 6, 7, 8];
-    const avg =
-      seeds
-        .map((seed) => runEconomy({ hours: 12, seed, spend: true }).hoursToReach.bungalow ?? 12)
-        .reduce((a, b) => a + b, 0) / seeds.length;
-    expect(avg).toBeGreaterThan(1.5);
-    expect(avg).toBeLessThan(6);
-  });
+  it(
+    'the first upgrade takes a few hours of play, on average (DESIGN 15.1)',
+    () => {
+      // Averaged, so one lucky early Legendary can't decide it. Includes the new-player quick start.
+      const seeds = [1, 2, 3, 4, 5, 6, 7, 8];
+      const avg =
+        seeds
+          .map((seed) => runEconomy({ hours: 12, seed, spend: true }).hoursToReach.bungalow ?? 12)
+          .reduce((a, b) => a + b, 0) / seeds.length;
+      expect(avg).toBeGreaterThan(1.5);
+      expect(avg).toBeLessThan(6);
+    },
+    ECONOMY_TIMEOUT_MS,
+  );
 });
