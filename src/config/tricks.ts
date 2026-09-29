@@ -4,7 +4,7 @@ import { deepFreeze } from './deepFreeze';
  * Tricks (DESIGN 11). `move` is the tween the animal plays when it performs the trick in the
  * world. Adding a trick = a data entry here.
  */
-export type TrickMove = 'hop' | 'spin' | 'wiggle' | 'roll' | 'bow';
+export type TrickMove = 'sit' | 'spin' | 'highFive' | 'roll' | 'jump' | 'dance' | 'wave' | 'fetch';
 
 export interface TrickDef {
   readonly id: string;
@@ -15,14 +15,14 @@ export interface TrickDef {
 
 // prettier-ignore
 export const TRICKS: readonly TrickDef[] = deepFreeze([
-  { id: 'sit',       name: 'Sit',       icon: '🪑', move: 'bow' },
+  { id: 'sit',       name: 'Sit',       icon: '🪑', move: 'sit' },
   { id: 'spin',      name: 'Spin',      icon: '🌀', move: 'spin' },
-  { id: 'high_five', name: 'High-Five', icon: '✋', move: 'hop' },
+  { id: 'high_five', name: 'High-Five', icon: '✋', move: 'highFive' },
   { id: 'roll_over', name: 'Roll Over', icon: '🔄', move: 'roll' },
-  { id: 'jump',      name: 'Jump',      icon: '⬆️', move: 'hop' },
-  { id: 'dance',     name: 'Dance',     icon: '💃', move: 'wiggle' },
-  { id: 'wave',      name: 'Wave',      icon: '👋', move: 'wiggle' },
-  { id: 'fetch',     name: 'Fetch',     icon: '🎾', move: 'hop' },
+  { id: 'jump',      name: 'Jump',      icon: '⬆️', move: 'jump' },
+  { id: 'dance',     name: 'Dance',     icon: '💃', move: 'dance' },
+  { id: 'wave',      name: 'Wave',      icon: '👋', move: 'wave' },
+  { id: 'fetch',     name: 'Fetch',     icon: '🎾', move: 'fetch' },
 ]);
 
 export function getTrick(id: string): TrickDef | undefined {

@@ -17,6 +17,9 @@ export const LAYOUT = {
   yard: { left: 110, top: 470, right: 1170, bottom: 730 },
 } as const;
 
+/** Where the HUD's coin counter sits over the world (coins from a sale fly here). */
+export const HUD_COINS: Vec2 = { x: 150, y: 28 };
+
 export function yardToWorld(p: Vec2): Vec2 {
   const { left, top, right, bottom } = LAYOUT.yard;
   return { x: left + p.x * (right - left), y: top + p.y * (bottom - top) };

@@ -45,8 +45,17 @@ export class YardScene extends ZoneScene {
       events.on('visitorRevealed', ({ visitor }) => {
         const sprite = this.visitors.get(visitor.id);
         if (!sprite) return;
-        const color = RARITY_STYLE[visitor.roll.rarity].hex;
-        this.fx.burst(sprite.x, sprite.y - 30, [color, 0xffd84d, 0xffffff], 12);
+        const { rarity, isSparkle } = visitor.roll;
+        const style = RARITY_STYLE[rarity];
+        this.fx.puff(sprite.x, sprite.y - 30);
+        this.fx.burst(sprite.x, sprite.y - 30, [style.hex, 0xffd84d, 0xffffff], 12);
+        // Rarer finds get a bigger party.
+        const big = isSparkle || rarity === 'rare' || rarity === 'epic' || rarity === 'legendary';
+        if (big)
+          this.fx.confetti(sprite.x, sprite.y - 60, isSparkle || rarity === 'legendary' ? 24 : 14);
+        if (isSparkle) this.fx.banner(sprite.x, sprite.y - 150, '✦ Sparkle! ✦', '#c2489a');
+        else if (rarity === 'epic' || rarity === 'legendary')
+          this.fx.banner(sprite.x, sprite.y - 150, `${style.label}!`, style.color);
       }),
       events.on('poopCleaned', ({ poop, by }) => {
         if (by === 'scoopBot' && poop.zone === 'yard')

@@ -229,64 +229,88 @@ export class AnimalSprite extends Phaser.GameObjects.Container {
     this.selectRing.setVisible(selected);
   }
 
-  /** A trick (DESIGN 11): a little move, then back to normal. */
+  /** A trick (DESIGN 11): its own little move, then back to normal. */
   perform(move: TrickMove): void {
     if (this.reducedMotion() || this.leaving) return;
     const s = this.scene;
-    s.tweens.killTweensOf(this.pose);
-    this.pose.setAngle(0).setScale(1).setPosition(0, 0);
-    const done = () => this.pose.setAngle(0).setScale(1).setPosition(0, 0);
+    const pose = this.pose;
+    s.tweens.killTweensOf(pose);
+    const reset = () => pose.setAngle(0).setScale(1).setPosition(0, 0);
+    reset();
+    type Step = Omit<Phaser.Types.Tweens.TweenBuilderConfig, 'targets'>;
+    const chain = (steps: Step[]) =>
+      s.tweens.chain({
+        tweens: steps.map((step) => ({ targets: pose, ...step })),
+        onComplete: reset,
+      });
     switch (move) {
-      case 'hop':
-        s.tweens.add({
-          targets: this.pose,
-          y: -50,
-          duration: 220,
-          yoyo: true,
-          repeat: 1,
-          ease: 'Quad.easeOut',
-          onComplete: done,
-        });
+      case 'sit':
+        // Squish down onto its bottom, hold, pop back up.
+        chain([
+          { scaleY: 0.72, scaleX: 1.12, y: 10, duration: 220, ease: 'Quad.easeOut' },
+          { scaleY: 1.08, scaleX: 0.95, y: -6, delay: 500, duration: 160 },
+          { scaleY: 1, scaleX: 1, y: 0, duration: 140 },
+        ]);
         break;
       case 'spin':
-        s.tweens.add({
-          targets: this.pose,
-          scaleX: -1,
-          duration: 160,
-          yoyo: true,
-          repeat: 2,
-          onComplete: done,
-        });
+        chain([
+          { scaleX: -1, duration: 140, ease: 'Sine.easeInOut' },
+          { scaleX: 1, duration: 140, ease: 'Sine.easeInOut' },
+          { scaleX: -1, duration: 140, ease: 'Sine.easeInOut' },
+          { scaleX: 1, duration: 140, ease: 'Sine.easeInOut' },
+        ]);
         break;
-      case 'wiggle':
-        s.tweens.add({
-          targets: this.pose,
-          angle: { from: -15, to: 15 },
-          duration: 140,
-          yoyo: true,
-          repeat: 3,
-          onComplete: done,
-        });
+      case 'highFive':
+        // Leans back and reaches up, then a happy bounce.
+        chain([
+          { angle: -18, y: -14, scaleY: 1.1, duration: 220, ease: 'Back.easeOut' },
+          { angle: 0, y: 0, scaleY: 1, delay: 250, duration: 150 },
+          { y: -18, duration: 140, yoyo: true, ease: 'Quad.easeOut' },
+        ]);
         break;
       case 'roll':
-        s.tweens.add({
-          targets: this.pose,
-          angle: 360,
-          duration: 700,
-          ease: 'Sine.easeInOut',
-          onComplete: done,
-        });
+        chain([
+          { angle: 360, duration: 700, ease: 'Sine.easeInOut' },
+          { y: -10, duration: 120, yoyo: true },
+        ]);
         break;
-      case 'bow':
-        s.tweens.add({
-          targets: this.pose,
-          scaleY: 0.75,
-          y: 8,
-          duration: 260,
-          yoyo: true,
-          hold: 200,
-          onComplete: done,
-        });
+      case 'jump':
+        // Crouch (squash), launch (stretch), land (squash), settle.
+        chain([
+          { scaleY: 0.8, scaleX: 1.12, y: 6, duration: 160, ease: 'Quad.easeOut' },
+          { scaleY: 1.18, scaleX: 0.88, y: -80, duration: 260, ease: 'Quad.easeOut' },
+          { scaleY: 1, scaleX: 1, y: 0, duration: 240, ease: 'Quad.easeIn' },
+          { scaleY: 0.85, scaleX: 1.1, duration: 90, yoyo: true },
+        ]);
+        break;
+      case 'dance':
+        // Side to side little hops.
+        chain(
+          [-1, 1, -1, 1].map((dir) => ({
+            x: dir * 14,
+            y: -14,
+            angle: dir * 10,
+            duration: 150,
+            yoyo: true,
+            ease: 'Sine.easeOut',
+          })),
+        );
+        break;
+      case 'wave':
+        chain([
+          { angle: -12, duration: 120 },
+          { angle: 12, duration: 180, yoyo: true, repeat: 2 },
+          { angle: 0, duration: 120 },
+        ]);
+        break;
+      case 'fetch':
+        // Dashes off to one side, then trots back proudly.
+        chain([
+          { x: 70 * this.facing, duration: 300, ease: 'Quad.easeIn' },
+          { y: -16, duration: 110, yoyo: true },
+          { x: 0, duration: 380, ease: 'Sine.easeOut' },
+          { y: -12, duration: 110, yoyo: true },
+        ]);
         break;
     }
   }
@@ -366,9 +390,11 @@ export class AnimalSprite extends Phaser.GameObjects.Container {
 
   private startHopping(): void {
     if (this.hopTween?.isPlaying()) return;
+    // Hop-walk: a little stretch on the way up.
     this.hopTween = this.scene.tweens.add({
       targets: this.breather,
       y: -10,
+      scaleX: 0.94,
       duration: 160,
       yoyo: true,
       repeat: -1,
@@ -379,7 +405,7 @@ export class AnimalSprite extends Phaser.GameObjects.Container {
   private stopHopping(): void {
     this.hopTween?.stop();
     this.hopTween = undefined;
-    this.breather.setY(0);
+    this.breather.setY(0).setScale(1, this.breather.scaleY);
   }
 
   private addSparkles(): void {

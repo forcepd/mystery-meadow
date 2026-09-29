@@ -9,6 +9,7 @@ import { Effects } from '../fx/effects';
 import {
   DOOR_RADIUS,
   doorOf,
+  HUD_COINS,
   gridArea,
   tileAt,
   tileCenterWorld,
@@ -149,6 +150,15 @@ export abstract class ZoneScene extends Phaser.Scene {
         for (const baby of babies) this.spawnFrom.set(baby.id, { at, kind: 'pop' });
         this.fx.hearts(at.x, at.y - 70, 5);
         this.fx.burst(at.x, at.y - 20, [0xffd84d, 0xff9fc4, 0xffffff]);
+        this.fx.confetti(at.x, at.y - 40, 12);
+        this.fx.floatText(
+          at.x,
+          at.y - 120,
+          '🍼'.repeat(Math.min(babies.length, 4)),
+          '#e0628b',
+          34,
+          250,
+        );
       }),
       events.on('animalSold', ({ animal, price }) => this.sold.set(animal.id, price)),
       events.on('petStored', ({ animal }) => this.stored.add(animal.id)),
@@ -161,7 +171,7 @@ export abstract class ZoneScene extends Phaser.Scene {
       events.on('trickPerformed', ({ animal, trickId }) => {
         const s = this.animals.get(animal.id);
         if (!s) return;
-        s.perform(getTrick(trickId)?.move ?? 'hop');
+        s.perform(getTrick(trickId)?.move ?? 'jump');
         this.fx.floatText(s.x, s.y - 100, getTrick(trickId)?.icon ?? '⭐', '#e0628b', 36);
         this.fx.hearts(s.x, s.y - 70, 2);
       }),
@@ -373,6 +383,12 @@ export abstract class ZoneScene extends Phaser.Scene {
       }
       this.fx.floatText(sprite.x, sprite.y - 90, `+${price} 🪙`, '#c98a00', 34);
       this.fx.hearts(sprite.x, sprite.y - 60, 3);
+      this.fx.coinShower(
+        sprite.x,
+        sprite.y - 40,
+        HUD_COINS,
+        Math.min(10, 3 + Math.floor(price / 40)),
+      );
       sprite.goodbye();
     }
   }
