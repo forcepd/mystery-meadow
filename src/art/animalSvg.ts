@@ -8,7 +8,13 @@ import {
   type SpeciesArt,
   type VariantColors,
 } from '../config/species';
-import { isBackOutfit, isUnderHeadOutfit, outfitFragment } from './outfitSvg';
+import {
+  fittedLayer,
+  fittedOutfit,
+  isBackOutfit,
+  outfitFragment,
+  type OutfitFit,
+} from './outfitSvg';
 import {
   OUTLINE,
   darken,
@@ -119,7 +125,7 @@ export function animalSvg(look: AnimalLook, view: ViewBox = ANIMAL_VIEW): string
   const eyeDx = (geo.hw * 0.36) / anchors.scale;
   const dress = (keep: (d: PetOutfitItemDef) => boolean) =>
     outfits
-      .filter(keep)
+      .filter((d) => fittedLayer(d) === null && keep(d))
       .map((def) => {
         const at = anchors[def.slot];
         return `<g transform="translate(${n(at.x)} ${n(at.y)}) scale(${Math.round(anchors.scale * 100) / 100})">${outfitFragment(def, eyeDx)}</g>`;
@@ -128,6 +134,22 @@ export function animalSvg(look: AnimalLook, view: ViewBox = ANIMAL_VIEW): string
 
   const bodyShape = bodyPath(geo);
   const headShape = `<ellipse cx="0" cy="${n(geo.hy)}" rx="${n(geo.hw)}" ry="${n(geo.hr)}"`;
+  // Clothes that fit the animal's own shape (sweater, tutu, scarf, bandana).
+  const fit: OutfitFit = {
+    cy: geo.by,
+    rx: geo.bw / 2,
+    ry: geo.bh / 2,
+    bodyShape,
+    bodyClip: 'bodyClip',
+    chinY: geo.hy + geo.hr,
+    hw: geo.hw,
+    hr: geo.hr,
+  };
+  const wear = (layer: 'body' | 'neck') =>
+    outfits
+      .filter((d) => fittedLayer(d) !== null)
+      .map((d) => fittedOutfit(d, fit, layer))
+      .join('');
   const defs =
     `<clipPath id="bodyClip">${bodyShape}/></clipPath>` +
     `<clipPath id="headClip">${headShape}/></clipPath>` +
@@ -148,10 +170,11 @@ export function animalSvg(look: AnimalLook, view: ViewBox = ANIMAL_VIEW): string
   parts.push(`${bodyShape} fill="${p.main}" ${stroke(p.outline)}/>`);
   if (p.details) parts.push(`<g clip-path="url(#bodyClip)">${bodyMarkings(geo, p)}</g>`);
   if (sparkle) parts.push(shimmerOver('bodyClip', geo.by - geo.bh, geo.bh * 2, geo.bw));
+  // Clothes go on the body, under the feet, wings, and head.
+  parts.push(wear('body'));
   if (art.body.shape !== 'pony') parts.push(feet(geo, p));
   if (geo.has('featherWings')) parts.push(featherWings(geo, p));
   if (geo.has('flippers')) parts.push(flippers(geo, p));
-  parts.push(dress((d) => d.slot === 'body' && isUnderHeadOutfit(d)));
 
   // Head.
   parts.push(earsBehind(geo, p));
@@ -165,7 +188,9 @@ export function animalSvg(look: AnimalLook, view: ViewBox = ANIMAL_VIEW): string
   parts.push(headExtras(geo, p));
   if (sparkle) parts.push(glitter(geo));
 
-  parts.push(dress((d) => d.slot === 'body' && !isBackOutfit(d) && !isUnderHeadOutfit(d)));
+  // Scarves, bandanas, and collars sit under the chin, over the body.
+  parts.push(wear('neck'));
+  parts.push(dress((d) => d.slot === 'body' && !isBackOutfit(d)));
   parts.push(dress((d) => d.slot === 'face'));
   parts.push(dress((d) => d.slot === 'head'));
   return svgDocument(view, parts.join(''), defs);

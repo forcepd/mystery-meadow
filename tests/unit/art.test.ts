@@ -82,6 +82,28 @@ describe('animal art', () => {
     expect(svg.lastIndexOf('#ff8fc4')).toBeGreaterThan(body); // hat
   });
 
+  it('fits clothes to the animal: sweaters on the body, scarves and bandanas under the chin', () => {
+    const look = (outfit: Record<string, string>) =>
+      animalSvg({ speciesId: 'puppy', variantId: 'golden', outfit });
+    const body = (svg: string) => svg.indexOf('fill="#e8b865"');
+    // The face is drawn with its eyes; the chin things come after the whole head.
+    const eyes = (svg: string) => svg.indexOf('fill="#2e2420"');
+
+    const sweater = look({ body: 'cozy_sweater' });
+    const knit = sweater.indexOf('fill="#6fa8ef"');
+    expect(knit).toBeGreaterThan(body(sweater));
+    expect(knit).toBeLessThan(eyes(sweater)); // Under the head.
+    expect(sweater).toMatch(/<g clip-path="url\(#bodyClip\)"><rect[^>]*fill="#6fa8ef"/);
+
+    const scarf = look({ body: 'warm_scarf' });
+    expect(scarf.indexOf('fill="#7cc46a"')).toBeGreaterThan(eyes(scarf));
+    const bandana = look({ face: 'bandana' });
+    expect(bandana.indexOf('fill="#ef6f6f"')).toBeGreaterThan(eyes(bandana));
+
+    const tutu = look({ body: 'pet_tutu' });
+    expect(tutu.indexOf('fill="#ffd1e8"')).toBeLessThan(eyes(tutu));
+  });
+
   it('ignores unknown outfits and falls back for unknown colors or species', () => {
     const plain = animalSvg({ speciesId: 'kitten', variantId: 'orange' });
     expect(animalSvg({ speciesId: 'kitten', variantId: 'orange', outfit: { head: 'sofa' } })).toBe(

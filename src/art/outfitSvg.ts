@@ -1,5 +1,5 @@
 import type { PetOutfitItemDef } from '../config/items';
-import { OUTLINE, n, stroke, twinkle } from './svg';
+import { OUTLINE, darken, lighten, n, stroke, twinkle } from './svg';
 
 /**
  * Pet outfit art (DESIGN 10.3) as SVG markup, drawn around an anchor at (0, 0) for a standard head
@@ -11,9 +11,159 @@ export function isBackOutfit(def: PetOutfitItemDef): boolean {
   return def.kind === 'cape';
 }
 
-/** Body outfits the head overlaps (the rest of the body slot sits on top, like a scarf). */
-export function isUnderHeadOutfit(def: PetOutfitItemDef): boolean {
-  return def.kind === 'sweater' || def.kind === 'tutu';
+/**
+ * Outfits drawn to fit each animal's own shape instead of at a fixed anchor: clothes on the body
+ * (under the head and feet) and things around the neck (over the body, under the chin).
+ */
+export function fittedLayer(def: PetOutfitItemDef): 'body' | 'neck' | null {
+  if (def.kind === 'sweater' || def.kind === 'tutu') return 'body';
+  if (def.kind === 'scarf' || def.kind === 'bandana') return 'neck';
+  return null;
+}
+
+/** An animal's shape, for fitted outfits (sprite space). */
+export interface OutfitFit {
+  /** Body center and half sizes. */
+  readonly cy: number;
+  readonly rx: number;
+  readonly ry: number;
+  /** The body outline as an unclosed element (`<ellipse ...` or `<path ...`). */
+  readonly bodyShape: string;
+  /** The clipPath id that holds the body shape. */
+  readonly bodyClip: string;
+  /** Where the chin is (bottom of the head) and the head's half sizes. */
+  readonly chinY: number;
+  readonly hw: number;
+  readonly hr: number;
+}
+
+/** Half the body's width at height y (0 outside it). */
+function bodyHalfWidth(fit: OutfitFit, y: number): number {
+  const t = (y - fit.cy) / fit.ry;
+  return Math.abs(t) >= 1 ? 0 : fit.rx * Math.sqrt(1 - t * t);
+}
+
+/** The outfit fitted to this animal. `layer` picks the body part or the neck part. */
+export function fittedOutfit(
+  def: PetOutfitItemDef,
+  fit: OutfitFit,
+  layer: 'body' | 'neck',
+): string {
+  const c = def.color;
+  const c2 = def.color2 ?? '#ffffff';
+  switch (def.kind) {
+    case 'sweater':
+      return layer === 'body' ? sweater(fit, c, c2) : collar(fit, c);
+    case 'tutu':
+      return layer === 'body' ? tutu(fit, c) : '';
+    case 'scarf':
+      return layer === 'neck' ? scarf(fit, c, c2) : '';
+    case 'bandana':
+      return layer === 'neck' ? bandana(fit, c, c2) : '';
+    default:
+      return '';
+  }
+}
+
+/** A knitted sweater on the body: stripes, a ribbed hem, and the belly and feet showing below. */
+function sweater(fit: OutfitFit, c: string, c2: string): string {
+  const top = fit.cy - fit.ry - 2;
+  const hem = fit.cy + fit.ry * 0.42;
+  const w = fit.rx + 4;
+  const rib = darken(c, 0.12);
+  const ribs: string[] = [];
+  for (let x = -w; x <= w; x += 5) ribs.push(`M${n(x)} ${n(hem - 7)} L${n(x)} ${n(hem)}`);
+  const stripeY = fit.cy - fit.ry * 0.05;
+  const inside =
+    `<rect x="${n(-w)}" y="${n(top)}" width="${n(w * 2)}" height="${n(hem - top)}" fill="${c}"/>` +
+    `<rect x="${n(-w)}" y="${n(stripeY)}" width="${n(w * 2)}" height="5" fill="${c2}"/>` +
+    `<rect x="${n(-w)}" y="${n(stripeY + 9)}" width="${n(w * 2)}" height="3" fill="${c2}"/>` +
+    `<rect x="${n(-w)}" y="${n(hem - 7)}" width="${n(w * 2)}" height="7" fill="${rib}"/>` +
+    `<path d="${ribs.join(' ')}" stroke="${darken(c, 0.25)}" stroke-width="1.5"/>` +
+    `<path d="M${n(-w)} ${n(hem)} L${n(w)} ${n(hem)}" stroke="${OUTLINE}" stroke-width="3"/>`;
+  return (
+    `<g clip-path="url(#${fit.bodyClip})">${inside}</g>` +
+    // Keep the animal's own outline crisp over the knit.
+    `${fit.bodyShape} fill="none" ${stroke(OUTLINE)}/>`
+  );
+}
+
+/** The sweater's ribbed collar, peeking out under the chin. */
+function collar(fit: OutfitFit, c: string): string {
+  const w = Math.min(fit.hw * 0.62, fit.rx * 0.8);
+  const y = fit.chinY;
+  const rib = darken(c, 0.12);
+  return `<path d="M${n(-w)} ${n(y - 5)} Q0 ${n(y + 3)} ${n(w)} ${n(y - 5)} L${n(w)} ${n(y)} Q0 ${n(y + 8)} ${n(-w)} ${n(y)} Z" fill="${rib}" ${stroke(OUTLINE, 2.5)}/>`;
+}
+
+/** A flared, ruffled skirt at the waist. */
+function tutu(fit: OutfitFit, c: string): string {
+  const wy = fit.cy - fit.ry * 0.02;
+  const waist = Math.max(bodyHalfWidth(fit, wy), fit.rx * 0.6) + 1;
+  const flare = waist * 1.08 + 7;
+  const layer = (color: string, drop: number, spread: number, scallops: number) => {
+    const w = flare * spread;
+    const y = wy + drop;
+    let d = `M${n(-waist)} ${n(wy)} L${n(waist)} ${n(wy)} L${n(w)} ${n(y)}`;
+    const step = (2 * w) / scallops;
+    for (let i = 0; i < scallops; i++) {
+      const x0 = w - i * step;
+      d += ` Q${n(x0 - step / 2)} ${n(y + 8)} ${n(x0 - step)} ${n(y)}`;
+    }
+    return `<path d="${d} Z" fill="${color}" ${stroke(OUTLINE, 2.5)}/>`;
+  };
+  const dots = [-0.5, -0.15, 0.2, 0.55]
+    .map((t, i) => twinkle(flare * t, wy + 6 + (i % 2) * 3, 2.5, '#ffffff'))
+    .join('');
+  return (
+    layer(lighten(c, 0.35), 14, 1.07, 9) +
+    layer(c, 10, 1, 7) +
+    `<rect x="${n(-waist)}" y="${n(wy - 3)}" width="${n(waist * 2)}" height="6" rx="3" fill="${darken(c, 0.15)}" ${stroke(OUTLINE, 2)}/>` +
+    dots
+  );
+}
+
+/** A striped scarf wrapped around the neck, with one fringed end hanging down. */
+function scarf(fit: OutfitFit, c: string, c2: string): string {
+  const w = Math.min(fit.hw * 0.9, fit.rx * 0.95);
+  const y = fit.chinY;
+  const band =
+    `M${n(-w)} ${n(y - 7)} Q0 ${n(y + 1)} ${n(w)} ${n(y - 7)} ` +
+    `L${n(w)} ${n(y + 3)} Q0 ${n(y + 12)} ${n(-w)} ${n(y + 3)} Z`;
+  const tx = w * 0.35;
+  const tail =
+    `<g transform="rotate(8 ${n(tx)} ${n(y + 4)})">` +
+    `<rect x="${n(tx - 5.5)}" y="${n(y + 2)}" width="11" height="22" rx="3" fill="${c}" ${stroke(OUTLINE, 2.5)}/>` +
+    `<path d="M${n(tx - 4)} ${n(y + 13)} L${n(tx + 4)} ${n(y + 13)}" stroke="${c2}" stroke-width="2.5" stroke-linecap="round"/>` +
+    `<path d="M${n(tx - 3.5)} ${n(y + 24)} l0 4 M${n(tx)} ${n(y + 24)} l0 4 M${n(tx + 3.5)} ${n(y + 24)} l0 4" stroke="${OUTLINE}" stroke-width="2" stroke-linecap="round"/>` +
+    `</g>`;
+  // One knitted stripe along the middle of the band.
+  const stripe = `<path d="M${n(-w + 3)} ${n(y - 2)} Q0 ${n(y + 7)} ${n(w - 3)} ${n(y - 2)}" fill="none" stroke="${c2}" stroke-width="2.5" stroke-dasharray="5 3" stroke-linecap="round"/>`;
+  return tail + `<path d="${band}" fill="${c}" ${stroke(OUTLINE, 2.5)}/>` + stripe;
+}
+
+/** A polka-dot neckerchief tied under the chin, pointing down over the chest. */
+function bandana(fit: OutfitFit, c: string, c2: string): string {
+  const w = Math.min(fit.hw * 0.68, fit.rx * 0.8);
+  const y = fit.chinY - 4;
+  const tip = y + Math.max(16, fit.hr * 0.72);
+  const dots = [
+    [-0.35, 0.3],
+    [0.3, 0.25],
+    [0, 0.6],
+    [-0.1, 0.15],
+  ]
+    .map(
+      ([fx, fy]) =>
+        `<circle cx="${n(w * fx!)}" cy="${n(y + (tip - y) * fy!)}" r="2" fill="${c2}"/>`,
+    )
+    .join('');
+  return (
+    `<path d="M${n(-w)} ${n(y)} Q0 ${n(y + 5)} ${n(w)} ${n(y)} Q${n(w * 0.45)} ${n((y + tip) / 2 + 2)} 0 ${n(tip)} Q${n(-w * 0.45)} ${n((y + tip) / 2 + 2)} ${n(-w)} ${n(y)} Z" fill="${c}" ${stroke(OUTLINE, 2.5)}/>` +
+    dots +
+    // The knot's two little ends, off to one side.
+    `<path d="M${n(w - 2)} ${n(y)} l7 -3 l1 6 Z M${n(w - 2)} ${n(y)} l6 5 l-4 3 Z" fill="${c}" ${stroke(OUTLINE, 2)}/>`
+  );
 }
 
 /**
@@ -53,27 +203,10 @@ export function outfitFragment(def: PetOutfitItemDef, eyeDx = 10): string {
         `<circle cx="0" cy="-3" r="3" fill="#ff6f9a"/><circle cx="-9" cy="0" r="2" fill="#8fd6ff"/><circle cx="9" cy="0" r="2" fill="#8fd6ff"/>`
       );
     // Body.
-    case 'sweater':
-      return (
-        `<ellipse cx="0" cy="0" rx="33" ry="19" fill="${c}" ${s}/>` +
-        `<path d="M-30 -2 L30 -2 M-26 9 L26 9" stroke="${c2}" stroke-width="4"/>` +
-        `<path d="M-14 -17 Q0 -10 14 -17" fill="none" stroke="${c2}" stroke-width="4"/>`
-      );
     case 'cape':
       return (
         `<path d="M-26 -22 L26 -22 Q40 4 44 26 Q0 34 -44 26 Q-40 4 -26 -22 Z" fill="${c}" ${s}/>` +
         `<circle cx="0" cy="-20" r="5" fill="${c2}" ${stroke(OUTLINE, 2)}/>`
-      );
-    case 'tutu':
-      return (
-        `<ellipse cx="0" cy="10" rx="45" ry="11" fill="${c}" fill-opacity="0.95" ${s}/>` +
-        `<path d="M-38 10 L-30 18 L-22 10 L-14 19 L-6 10 L2 19 L10 10 L18 19 L26 10 L34 18" fill="none" stroke="#ffffff" stroke-width="2" stroke-opacity="0.8"/>`
-      );
-    case 'scarf':
-      return (
-        `<rect x="-26" y="-22" width="52" height="11" rx="5.5" fill="${c}" ${s}/>` +
-        `<rect x="10" y="-15" width="11" height="24" rx="4" fill="${c}" ${s}/>` +
-        `<path d="M10 4 L21 4" stroke="${c2}" stroke-width="3"/>`
       );
     // Face.
     case 'glasses':
@@ -81,11 +214,6 @@ export function outfitFragment(def: PetOutfitItemDef, eyeDx = 10): string {
         `<circle cx="${n(-eyeDx)}" cy="0" r="7.5" fill="#ffffff" fill-opacity="0.25" stroke="${c}" stroke-width="3"/>` +
         `<circle cx="${n(eyeDx)}" cy="0" r="7.5" fill="#ffffff" fill-opacity="0.25" stroke="${c}" stroke-width="3"/>` +
         `<path d="M${n(-eyeDx + 7.5)} 0 L${n(eyeDx - 7.5)} 0" stroke="${c}" stroke-width="3"/>`
-      );
-    case 'bandana':
-      return (
-        `<path d="M-20 12 L20 12 L0 30 Z" fill="${c}" ${stroke(OUTLINE, 2.5)}/>` +
-        `<circle cx="-6" cy="16" r="2" fill="${c2}"/><circle cx="5" cy="20" r="2" fill="${c2}"/><circle cx="0" cy="25" r="1.5" fill="${c2}"/>`
       );
     case 'star':
       return (

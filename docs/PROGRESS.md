@@ -1221,3 +1221,10 @@ The start is much busier, as intended. But because the yard fills to capacity ab
 - A find can land on top of an animal. The first tap then collects the find, and the second tap reaches the animal.
 - **The tutorial still said "In 20 minutes it's ready for a new home"** after the early-game pass made a new player's first animals ready in 5. The text was hardcoded. It now shows the animal's real wait ("In 5 minutes…", counting down), using `inMinutes()` in `bridge/describe.ts` (unit-tested). The onboarding e2e test checks it.
 - **Animals invisible after reloading a save (dev server).** The texture helper kept one shared list of pictures being built for *every* Phaser game. React StrictMode in dev creates a game, destroys it, and creates another, so the second game waited on the first game's build. The picture then went into the destroyed game's texture store, and the second game was told to use a texture it never got. Animals showed only their names and shadows. It could also happen in a real build if the game is recreated mid-load (e.g. Switch player right after loading). In-progress builds are now kept per game (`svgTexture.ts`). A unit test reproduces it with two fake games, and dev-server screenshots confirm the fix.
+- **Pet clothes looked bad (sweater, scarf, tutu, bandana).** They were drawn at one fixed spot and size for every animal: the sweater was a striped oval floating over the body, the tutu a flat disc at the feet, and the scarf and bandana covered the mouth. These four are now drawn to each animal's own shape (`fittedOutfit` in `art/outfitSvg.ts`):
+  - **Sweater:** knitted onto the body itself (clipped to its outline), with stripes, a ribbed hem, and a ribbed collar under the chin. The belly and feet show below it.
+  - **Tutu:** a two-layer ruffled skirt that flares from the animal's real waist width.
+  - **Scarf:** wraps around the neck under the chin, with a dashed knit stripe and a fringed end hanging down.
+  - **Bandana:** a polka-dot neckerchief under the chin, with a little knot.
+
+  Hats, glasses, and the cape still use their anchors. Checked on 10 body shapes, plus close-ups. A unit test pins the layering.
