@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, type ReactNode } from 'react';
 import type { GameSession } from '../bridge/gameSession';
 import { AnimalCard } from './AnimalCard';
 import { AwayCard } from './AwayCard';
@@ -15,7 +15,7 @@ import { StyleScreen } from './StyleScreen';
 import { TutorialCoach } from './TutorialCoach';
 import { TrainingScreen } from './TrainingScreen';
 import { PetWardrobe } from './PetWardrobe';
-import { SessionProvider } from './session';
+import { SessionProvider, useSim } from './session';
 import { Toasts } from './Toasts';
 import { VetClinic } from './VetClinic';
 
@@ -25,7 +25,7 @@ const DebugPanel = import.meta.env.DEV ? lazy(() => import('../dev/DebugPanel'))
 export function App({ session }: { session: GameSession }) {
   return (
     <SessionProvider session={session}>
-      <div className={styles.app}>
+      <AppFrame>
         <GameCanvas />
         <Hud />
         <AnimalCard />
@@ -47,7 +47,20 @@ export function App({ session }: { session: GameSession }) {
             <DebugPanel />
           </Suspense>
         )}
-      </div>
+      </AppFrame>
     </SessionProvider>
+  );
+}
+
+/** The app's root box. Carries the in-game "Less motion" setting down to the CSS. */
+function AppFrame({ children }: { children: ReactNode }) {
+  const { sim } = useSim();
+  return (
+    <div
+      className={styles.app}
+      data-reduced-motion={sim.state.world.settings.reducedMotion ? 'true' : 'false'}
+    >
+      {children}
+    </div>
   );
 }

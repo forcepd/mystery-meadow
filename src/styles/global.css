@@ -49,3 +49,17 @@ button {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* The in-game "Less motion" setting does the same, for kids whose device doesn't ask for it. */
+[data-reduced-motion='true'] *,
+[data-reduced-motion='true'] *::before,
+[data-reduced-motion='true'] *::after {
+  animation-duration: 0.01ms !important;
+  transition-duration: 0.01ms !important;
+}
+
+/* Keyboard focus is always visible (screens and controls without their own focus style). */
+:focus-visible {
+  outline: 4px solid #3f7fbf;
+  outline-offset: 2px;
+}

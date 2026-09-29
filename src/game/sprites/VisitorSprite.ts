@@ -4,7 +4,7 @@ import { animalArt, mysteryArt, type ArtRequest } from '../../assets/manifest';
 import { speciesName } from '../../bridge/describe';
 import type { Vec2, Visitor } from '../../sim/types';
 import { FONT, TEXT_RESOLUTION } from '../constants';
-import { SVG_RESOLUTION, ensureTexture } from './svgTexture';
+import { ensureTexture } from './svgTexture';
 
 /**
  * A mystery visitor at the gate: a wobbling silhouette with a "?" bubble until revealed,
@@ -141,7 +141,7 @@ export class VisitorSprite extends Phaser.GameObjects.Container {
       this.art
         .setTexture(key)
         .setOrigin(art.origin.x, art.origin.y)
-        .setScale(1 / SVG_RESOLUTION)
+        .setDisplaySize(art.size.w, art.size.h)
         .setVisible(true);
     });
   }

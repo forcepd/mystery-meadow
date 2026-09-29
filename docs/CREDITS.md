@@ -10,11 +10,12 @@ Every art, audio, and font asset shipped in the game is listed here with its sou
 
 ## Art
 
-| Asset                                                                                                                       | Source                          | License       |
-| --------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | ------------- |
-| App icon / favicon (`public/icons/favicon.svg` and the PNGs rendered from it)                                               | Original, made for this project | Project-owned |
-| Placeholder meadow scene and HUD shapes                                                                                     | Original, drawn in code         | Project-owned |
-| Animals (all 21 species, colors, Sparkle), pet outfits, lures, furniture, and beds: parametric SVG in `src/art/` (Phase 10) | Original, drawn in code         | Project-owned |
+| Asset                                                                                                                       | Source                                                                                     | License           |
+| --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ----------------- |
+| App icon / favicon (`public/icons/favicon.svg` and the PNGs rendered from it)                                               | Original, made for this project                                                            | Project-owned     |
+| Meadow, house, and HUD shapes; avatar parts (`src/art/avatarSvg.ts`)                                                        | Original, drawn in code                                                                    | Project-owned     |
+| Animals (all 21 species, colors, Sparkle), pet outfits, lures, furniture, and beds: parametric SVG in `src/art/` (Phase 10) | Original, drawn in code                                                                    | Project-owned     |
+| Emoji icons in the HUD, badges, and toasts                                                                                  | Rendered by the player's own device emoji font. No emoji images are bundled or downloaded. | n/a (system font) |
 
 ## Audio
 
@@ -25,10 +26,3 @@ Every art, audio, and font asset shipped in the game is listed here with its sou
 ## Code libraries (runtime)
 
 Phaser (MIT), React and React DOM (MIT), Workbox (MIT, via vite-plugin-pwa).
-
-## Art
-
-| Asset                                                | Source                                                                                     | License           |
-| ---------------------------------------------------- | ------------------------------------------------------------------------------------------ | ----------------- |
-| Placeholder yard, house, and animal shapes (Phase 2) | Drawn in code with Phaser Graphics (`src/game/sprites/`). Original.                        | Original work     |
-| Emoji icons in the HUD, badges, and toasts           | Rendered by the player's own device emoji font. No emoji images are bundled or downloaded. | n/a (system font) |

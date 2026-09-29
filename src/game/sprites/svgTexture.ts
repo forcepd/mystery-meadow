@@ -3,6 +3,15 @@ import type Phaser from 'phaser';
 /** SVG art is rasterized at 2x so it stays crisp on Retina iPads (shown at 1/RESOLUTION scale). */
 export const SVG_RESOLUTION = 2;
 
+/** DESIGN 18.5: no texture larger than this on either side. */
+export const MAX_TEXTURE_PX = 4096;
+
+/** The pixel size a picture of `size` world px is rasterized at (2x, capped). */
+export function texturePixels(size: { w: number; h: number }): { w: number; h: number } {
+  const scale = Math.min(SVG_RESOLUTION, MAX_TEXTURE_PX / Math.max(size.w, size.h, 1));
+  return { w: Math.ceil(size.w * scale), h: Math.ceil(size.h * scale) };
+}
+
 const pending = new Map<string, ((key: string) => void)[]>();
 
 /**
@@ -35,8 +44,9 @@ export function ensureTexture(
     pending.delete(key);
     if (!textures.exists(key)) {
       const canvas = document.createElement('canvas');
-      canvas.width = Math.ceil(size.w * SVG_RESOLUTION);
-      canvas.height = Math.ceil(size.h * SVG_RESOLUTION);
+      const px = texturePixels(size);
+      canvas.width = px.w;
+      canvas.height = px.h;
       canvas.getContext('2d')?.drawImage(img, 0, 0, canvas.width, canvas.height);
       textures.addCanvas(key, canvas);
     }

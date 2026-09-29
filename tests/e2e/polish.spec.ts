@@ -1,11 +1,13 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import {
+  animalTapPoint,
   buildSave,
   canvasReady,
   gateTapPoint,
   press,
   seedSave,
   tapWorld,
+  testAnimal,
   testVisitor,
 } from './helpers';
 
@@ -118,5 +120,106 @@ test.describe('while you were away (DESIGN 14)', () => {
     await page.goto('./');
     await canvasReady(page);
     await expect(page.getByRole('dialog', { name: /while you were away/i })).toHaveCount(0);
+  });
+});
+
+/**
+ * DESIGN 17.5 / 18.5: every control on screen is at least 48x48 and has a name a screen reader
+ * can read. Checkboxes count their whole label as the target.
+ */
+async function audit(page: Page, where: string) {
+  await page.waitForTimeout(250); // Let the screen settle.
+  const problems = await page.evaluate(() => {
+    const out: string[] = [];
+    const controls = document.querySelectorAll<HTMLElement>(
+      'button, a[href], input:not([type="hidden"]), select, [role="button"]',
+    );
+    for (const el of controls) {
+      const r0 = el.getBoundingClientRect();
+      if (r0.width === 0 || r0.height === 0) continue;
+      const input = el as HTMLInputElement;
+      const label = el.closest('label');
+      const target = (input.type === 'checkbox' || input.type === 'radio') && label ? label : el;
+      const r = target.getBoundingClientRect();
+      const labelledBy = el.getAttribute('aria-labelledby');
+      const name = (
+        el.getAttribute('aria-label') ||
+        (labelledBy && document.getElementById(labelledBy)?.textContent) ||
+        label?.textContent ||
+        (el instanceof HTMLInputElement && el.labels?.[0]?.textContent) ||
+        el.textContent ||
+        el.getAttribute('title') ||
+        ''
+      ).trim();
+      const what = `${el.tagName.toLowerCase()} "${name || '?'}"`;
+      if (r.width < 47.5 || r.height < 47.5)
+        out.push(`${what} is ${Math.round(r.width)}x${Math.round(r.height)}`);
+      if (!name) out.push(`${what} has no name`);
+    }
+    return out;
+  });
+  expect(problems, where).toEqual([]);
+}
+
+test.describe('accessibility pass (DESIGN 17.5)', () => {
+  test('main screens: big enough targets, every control named', async ({ page }) => {
+    await seedSave(
+      page,
+      buildSave((s, now) => {
+        s.world.coins = 500;
+        s.world.settings.sicknessEnabled = false;
+        s.world.animals.push(
+          testAnimal(now, {
+            isKept: true,
+            tricks: { known: ['sit'], progress: {}, nextTrainAt: now },
+            sickness: { illnessId: 'sniffles', since: now },
+          }),
+        );
+      }),
+    );
+    await page.goto('./');
+    await canvasReady(page);
+    await audit(page, 'world');
+
+    const menu = page.getByRole('navigation', { name: 'Menu' });
+    const close = async () => {
+      await press(page, page.getByRole('button', { name: 'Close' }).last());
+    };
+    for (const [button, where] of [
+      [/pets/i, 'pets'],
+      [/dex/i, 'dex'],
+      [/store/i, 'store'],
+      [/real estate/i, 'real estate'],
+    ] as const) {
+      await press(page, menu.getByRole('button', { name: button }));
+      await audit(page, where);
+      await close();
+    }
+    await press(page, page.getByRole('button', { name: 'Settings' }));
+    await audit(page, 'settings');
+    await close();
+    await press(page, page.getByRole('button', { name: /my style/i }));
+    await audit(page, 'style');
+    await close();
+
+    await tapWorld(page, animalTapPoint({ x: 0.5, y: 0.5 }));
+    const card = page.getByRole('complementary', { name: /bunny card/i });
+    await expect(card).toBeVisible();
+    await audit(page, 'animal card');
+    await press(page, card.getByRole('button', { name: /go to vet/i }));
+    await expect(page.getByRole('complementary', { name: 'Vet Clinic' })).toBeVisible();
+    await audit(page, 'vet clinic');
+  });
+
+  test('the in-game "Less motion" setting calms the screens too', async ({ page }) => {
+    await seedSave(
+      page,
+      buildSave((s) => {
+        s.world.settings.reducedMotion = true;
+      }),
+    );
+    await page.goto('./');
+    await canvasReady(page);
+    await expect(page.locator('[data-reduced-motion="true"]')).toHaveCount(1);
   });
 });

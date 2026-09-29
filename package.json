@@ -15,7 +15,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "icons": "node scripts/generate-icons.mjs",
-    "economy": "tsx scripts/economy.ts"
+    "economy": "tsx scripts/economy.ts",
+    "perf": "PERF=1 playwright test tests/e2e/perf.spec.ts --workers=1"
   },
   "dependencies": {
     "@fontsource/nunito": "^5.3.0",

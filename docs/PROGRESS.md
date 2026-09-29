@@ -912,12 +912,12 @@ A brand-new player goes from first launch to their first sale entirely through t
 
 ---
 
-## Phase 10: Art, Audio, and Polish (in progress)
+## Phase 10: Art, Audio, and Polish (built 2026-09-28)
 
 Your choices before starting:
 - **Audio:** made in code with Web Audio. It's original, needs no files or licenses, and makes no network calls.
 - **Tricky vet cases:** from the Farmhouse tier on, 20% of new sicknesses (tunable) come with two illnesses. Each needs its own right treatment, and there's only one visit fee.
-- **Pacing:** stop after the art (step A) for a review.
+- **Pacing:** stop after the art (step A) for a review, then build the rest (B–F).
 
 ### Step A: Art pass (built 2026-09-28)
 
@@ -978,3 +978,131 @@ Your choices before starting:
 
 - Sparkle's rainbow shimmer is subtle on dark colors (e.g. a Sparkle black kitten). The twinkling stars still mark it.
 - The texture cache never empties during a session. It's limited by how many different looks you see (outfit combinations add some).
+
+### Step B: Animations and celebrations
+
+- **Particle cap** (DESIGN 18.5): at most 90 particles alive per scene (`src/game/fx/budget.ts`). Extra effects are trimmed, never queued.
+- **New effects** (`src/game/fx/effects.ts`):
+  - Confetti.
+  - A coin shower that flies to the HUD's coin counter.
+  - A puff of cloud.
+  - A pop-in banner.
+- **Reveal:** the mystery visitor turns into the animal with a puff and a burst.
+  - Rare, Epic, Legendary, and Sparkle finds get confetti.
+  - Epic and Legendary get a "Legendary!" banner, and Sparkle gets "✦ Sparkle! ✦".
+- **Birth:** hearts, a burst, confetti, and one 🍼 per baby. The babies still pop in.
+- **Sale:** "+N 🪙", hearts, and coins that fly to the coin counter (more coins for bigger sales).
+- **Tricks:** each of the 8 tricks has its own move:
+  - Sit: squish and hold. Spin: two turns. High-Five: lean back and reach, then bounce.
+  - Roll Over: a full roll. Jump: squash, stretch, and land.
+  - Dance: side-to-side hops. Wave: a tilting wave. Fetch: dash off and trot back.
+- **Walking:** the hop-walk now stretches a little on the way up.
+- **Reduced motion:** everything fades in place instead of moving.
+
+### Step C: Music and sound (DESIGN 16.3)
+
+- **Made in code with Web Audio** (`src/audio/`): the music and sound data is in `sounds.ts`, and `AudioEngine.ts` plays it. There are no audio files, no licenses, and no network calls.
+- **Music:** separate loops for the yard (bright, about 21 seconds) and the house (a slow music box, about 27 seconds). The vet uses the house tune.
+  - Tracks change with a short fade when the scene changes.
+  - Notes are scheduled a little ahead of time, so the music doesn't stutter if the game slows for a moment.
+- **Sounds:** a pop for reveals, coins, a sparkle for cleaning poop, a small silly sneeze, a baby squeak, a cheer for trick success, and a purchase jingle.
+  - Also: a fanfare (trick learned, house upgrade, cure), a happy chirp (petting, treats, dressing), a gentle "oops" (wrong treatment, Simon-says mistake), gems, and a note for each Simon-says cue.
+  - Each arrow has its own pitch, so the sequence can be learned by ear too.
+- **How it's wired:** `bridge/audioBridge.ts` maps sim events to sounds (a pure, tested function) and scenes to music.
+  - Sound starts on the first tap, click, or key press, which iOS requires.
+  - It pauses while the page is hidden.
+  - The same sound can't restart within 70 ms, so a burst of events still sounds nice.
+- **Settings** (for kids, no PIN): 🔇 All sounds off, and 🎵 Music and 🔊 Sounds sliders (0–10).
+- **Phaser's own audio is off**, so there's only one audio context.
+- **Save v6:** `settings.muted` (the migration sets it to off).
+
+### Step D: "While you were away" card (DESIGN 14, 17.1 #15)
+
+- **When it shows:** after at least 5 minutes away (`BALANCE.offline.summaryMinMinutes`), when loading a save or coming back to a hidden page. Never during the first-time tutorial.
+- **What it says:**
+  - "You were gone 2 hours."
+  - Visitors waiting, babies born, babies grown up, and animals ready to sell.
+  - "Everyone had a cozy nap" if nothing happened, or "Everything waited for you" if offline progress is off.
+  - Always: "Nobody got hungry or sick while you were gone."
+- **Toast:** shorter breaks still get the old "Welcome back!" toast; longer ones get the card instead.
+
+### Step E: Tricky two-illness vet cases (DESIGN 9.5 step 6)
+
+- **When:** from the Big Farmhouse on (`trickyCaseMinTier`), 20% of new sicknesses (`trickyCaseChance`) get a second, different illness (`sickness.secondIllnessId`).
+  - An illness caught from a neighbor is never tricky.
+  - Only the first illness shows in the world and spreads.
+- **At the vet:**
+  - The card and clinic show both symptoms, and a purple "Tricky case! Two things are wrong" note.
+  - Exams show both illnesses' clues. An "all clear" clue only shows if neither illness shows anything.
+  - Each right treatment fixes one illness, in either order: "Great, that fixed one thing! One more to go." The clue notebook clears for the one that's left.
+  - One visit fee, and each treatment is paid. The Free Clinic works too.
+  - The animal becomes immune to both illnesses.
+- **Events:** `vetTreated` gains `helped`. The sounds, the vet scene ("1 more!"), and the toast ("A tricky case: two things are wrong") use it.
+- **Dev:** the Debug Panel has a 🤒🤒 Tricky button.
+
+### Step F: Speed and accessibility
+
+**Speed**
+
+- **Measured** with `npm run perf`: a busy yard (24 animals, some in outfits or Sparkle, 3 visitors, and 6 poops).
+  - 60 fps in iPad mini and iPad Pro WebKit, and 59 in Chromium, on this Mac.
+  - With Chromium's CPU slowed 4x: 42 fps. Profiling that shows about 70% of the time is the headless browser's *software* GPU drawing. The game's own code is under 2% of a frame.
+  - A real iPad draws on its GPU, so this should be fine, **but it has to be checked on the device** (checklist below).
+- **Changes:**
+  - Sprites skip rebuilding their art key unless the look changed.
+  - Textures are capped at 4096 px (tested).
+  - Particles are capped.
+  - Phaser's own audio is off.
+
+**Accessibility**
+
+- **Automated check** (e2e, all 3 browser setups): on the world, Pets, Dex, Store, Real Estate, Settings, Style, Animal Card, and Vet Clinic screens, every control is at least 48×48 and has a name a screen reader can read. Everything passed.
+- **Less motion:** the in-game "Less motion" setting now calms the CSS animations too (`data-reduced-motion`), not just the Phaser ones.
+- **Keyboard:** a visible focus ring for everything.
+- **Sound is never the only cue:** Simon-says cues light up, and all game news also shows as text.
+
+**Tests**
+
+- 491 unit tests (42 new in steps B–F). They cover:
+  - The particle budget and texture caps.
+  - Notes, patterns, songs, and sound recipes.
+  - The event-to-sound map and the audio engine against a fake Web Audio: nothing plays before unlock, mute, the burst limit, music scheduling and stopping, and pausing.
+  - The away card and the session showing it.
+  - Tricky cases: the tier gate, about 20% frequency, immunity, spreading, merged clues, either order, fees, and the Free Clinic.
+  - The v5 → v6 migration.
+- 250 e2e runs (2 skipped). New ones:
+  - The sound settings save and reload.
+  - Audio really starts on the first tap, and a reveal plays notes (Web Audio is watched in the browser).
+  - The away card shows, and a quick reload doesn't show it.
+  - A full tricky-case cure.
+  - The accessibility check and the Less motion attribute.
+- The economy harness is unchanged (its bot stays at the Cottage, so no tricky cases).
+
+### Phase 10 "Done when": your turn on the iPad
+
+The spec's "runs at 60 fps on the target iPad and passes the manual checklist in Section 22" needs a real device. Please check each of these:
+
+1. Install to the Home Screen (Share → Add to Home Screen) and launch it from there.
+2. **Sound starts after the first tap**: music in the yard, a different tune in the house, and a sneeze when someone gets sick. The Settings sliders and mute work, and the sound stops when you switch apps.
+3. Touch targets feel easy, with no accidental zoom (double-tap or pinch) in the game.
+4. The rotate prompt shows in portrait.
+5. A reload keeps the save. Leave for over 5 minutes and come back: the "While you were away" card shows.
+6. **30 minutes of play without frame drops**, including a crowded yard, reveals with confetti, and sales. If it stutters, tell me where.
+7. Kid playtest (DESIGN 22): watch her play without helping. Does she like the animals, the sounds, and the celebrations? Where does she get stuck?
+
+### Deviations and defaults (steps B–F): please confirm or change
+
+1. **Music and sounds are made in code** (your choice). They're cute and simple chiptune-style sounds. Tell me if any of them are annoying, too loud, or too quiet.
+2. **The vet uses the house music** (the spec only names yard and house tracks).
+3. **The away card shows after 5 minutes away.** Shorter breaks keep the small toast.
+4. **Tricky cases:** only brand-new sicknesses can be tricky (never caught ones), and only the first illness spreads (your choice). A cure makes the animal immune to both illnesses.
+5. **Volume sliders have 11 steps** (Off, 1–10) and sit in the kid's Settings, not behind the PIN.
+6. **One save version (v6)** covers the mute switch and the optional `secondIllnessId`.
+
+### Known issues (steps B–F)
+
+- The frame rate on a real iPad is still unchecked (see above).
+- I can't listen to the audio from here. The tests check that it plays, stays in range, and never gets too loud, but not how it *sounds*. Please listen and tell me what to change.
+- The onboarding e2e test (Phase 8) failed once while the whole suite ran at full speed, then passed 3 times in a row on its own and in the next full run. It's probably timing under load; I'll keep an eye on it.
+- The game world itself (the Phaser canvas) can't be read by a screen reader. Everything important also shows in the HTML screens (card, toasts, HUD).
+

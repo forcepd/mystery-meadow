@@ -5,7 +5,7 @@ import { getIllness, type SymptomFx } from '../../config/illnesses';
 import type { Badge } from '../../sim/GameSim';
 import type { Animal, Vec2 } from '../../sim/types';
 import { COLORS, FONT, TEXT_RESOLUTION } from '../constants';
-import { SVG_RESOLUTION, ensureTexture } from './svgTexture';
+import { ensureTexture } from './svgTexture';
 import { showSymptom, type SymptomHandle } from './symptoms';
 import type { TrickMove } from '../../config/tricks';
 
@@ -44,6 +44,7 @@ export class AnimalSprite extends Phaser.GameObjects.Container {
   /** The animal's picture, outfit included (DESIGN 16.2, 10.3). */
   private readonly art: Phaser.GameObjects.Image;
   private artKey = '';
+  private lookKey = '';
   private readonly label: Phaser.GameObjects.Text;
   private readonly badge: Phaser.GameObjects.Text;
   private readonly selectRing: Phaser.GameObjects.Ellipse;
@@ -190,6 +191,11 @@ export class AnimalSprite extends Phaser.GameObjects.Container {
 
   /** Shows the animal's picture, building its texture the first time this look is seen. */
   private syncArt(animal: Animal): void {
+    // Cheap check first: this runs every frame for every animal.
+    const { head, body, face } = animal.outfit;
+    const look = `${animal.speciesId}|${animal.variantId}|${animal.isSparkle}|${head}|${body}|${face}`;
+    if (look === this.lookKey) return;
+    this.lookKey = look;
     const art = animalArt(animal);
     if (art.key === this.artKey) return;
     this.artKey = art.key;
@@ -198,7 +204,7 @@ export class AnimalSprite extends Phaser.GameObjects.Container {
       this.art
         .setTexture(key)
         .setOrigin(art.origin.x, art.origin.y)
-        .setScale(1 / SVG_RESOLUTION)
+        .setDisplaySize(art.size.w, art.size.h)
         .setVisible(true);
     });
   }
