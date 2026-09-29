@@ -8,6 +8,7 @@ import { useAppEvent } from './useAppEvent';
 import styles from './VetClinic.module.css';
 
 const WRONG = 'Hmm, that didn’t work. Look at the clues again.';
+const ONE_MORE = 'Great, that fixed one thing! One more to go. Look for new clues.';
 
 /**
  * Vet Clinic panel (DESIGN 9.5, 17.1): the clue notebook and the treatment cabinet, next to
@@ -17,7 +18,7 @@ export function VetClinic() {
   const { sim } = useSim();
   const [animalId, setAnimalId] = useState<string | null>(null);
   const [clues, setClues] = useState<Record<string, readonly ClueDef[]>>({});
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState<{ text: string; good?: boolean } | null>(null);
   const [curedName, setCuredName] = useState<string | null>(null);
 
   useAppEvent(
@@ -40,7 +41,7 @@ export function VetClinic() {
         setClues((c) => ({ ...c, [toolId]: result.clues }));
         setMessage(null);
       } else {
-        setMessage(result.reason);
+        setMessage({ text: result.reason });
       }
     }, []),
   );
@@ -73,6 +74,9 @@ export function VetClinic() {
   }
 
   const illness = getIllness(animal.sickness.illnessId);
+  const second = animal.sickness.secondIllnessId
+    ? getIllness(animal.sickness.secondIllnessId)
+    : undefined;
   const free = animal.sickness.visit === 'free';
   const until = animal.sickness.atClinicUntil;
   const waiting = until !== undefined;
@@ -81,9 +85,13 @@ export function VetClinic() {
 
   const treat = (treatmentId: string) => {
     const result = sim.vetTreat(animal.id, treatmentId);
-    if (!result.ok) setMessage(result.reason);
+    if (!result.ok) setMessage({ text: result.reason });
     else if (result.cured) setCuredName(name);
-    else setMessage(WRONG);
+    else if (result.helped) {
+      // Half of a tricky case: a fresh notebook for the one that's left.
+      setClues({});
+      setMessage({ text: ONE_MORE, good: true });
+    } else setMessage({ text: WRONG });
   };
 
   return (
@@ -103,9 +111,21 @@ export function VetClinic() {
           </h2>
           <p className={styles.patient}>
             {name}: <span aria-hidden="true">{illness?.symptomIcon}</span> {illness?.symptoms}
+            {second && (
+              <>
+                {' '}
+                and <span aria-hidden="true">{second.symptomIcon}</span> {second.symptoms}
+              </>
+            )}
           </p>
         </div>
       </header>
+      {second && (
+        <p className={styles.tricky} data-testid="tricky-case">
+          <span aria-hidden="true">🔍</span> Tricky case! Two things are wrong. Find both
+          treatments.
+        </p>
+      )}
       <p className={styles.visit} data-testid="visit-type">
         {free ? '🏥 Free Clinic: treatments are free' : '✅ Visit paid'}
       </p>
@@ -170,8 +190,8 @@ export function VetClinic() {
       )}
 
       {message && (
-        <p className={styles.message} role="status">
-          {message}
+        <p className={`${styles.message} ${message.good ? styles.good : ''}`} role="status">
+          {message.text}
         </p>
       )}
     </aside>

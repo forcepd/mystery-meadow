@@ -51,6 +51,11 @@ export interface Animal {
 /** DESIGN 9. */
 export interface Sickness {
   illnessId: string;
+  /**
+   * A tricky case (DESIGN 9.5 step 6, save v6): a second illness that needs its own treatment.
+   * Only `illnessId` shows in the world and spreads to others.
+   */
+  secondIllnessId?: string;
   since: Ms;
   /** Free Clinic: waiting to see the vet until this time. Cleared when the wait is over. */
   atClinicUntil?: Ms;

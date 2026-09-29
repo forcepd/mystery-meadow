@@ -81,7 +81,7 @@ export function debugSetNeeds(sim: GameSim, hunger: number, happiness: number): 
  */
 export function debugMakeSick(
   sim: GameSim,
-  opts: { illnessId?: string; all?: boolean; animalId?: string } = {},
+  opts: { illnessId?: string; all?: boolean; animalId?: string; tricky?: boolean } = {},
 ): number {
   return sim.debugRun((ctx) => {
     const now = ctx.state.meta.lastSeenAt;
@@ -90,7 +90,12 @@ export function debugMakeSick(
     );
     const targets = opts.all ? healthy : healthy.slice(0, 1);
     for (const animal of targets) {
-      makeSick(ctx, animal, opts.illnessId ?? ctx.rng.pick(ILLNESSES).id, now);
+      const first = opts.illnessId ?? ctx.rng.pick(ILLNESSES).id;
+      // A tricky case (DESIGN 9.5 step 6) at any house tier, for testing.
+      const second = opts.tricky
+        ? ctx.rng.pick(ILLNESSES.filter((i) => i.id !== first)).id
+        : undefined;
+      makeSick(ctx, animal, first, now, second);
     }
     return targets.length;
   });

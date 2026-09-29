@@ -70,6 +70,9 @@ export function AnimalCard() {
   const carePercent = Math.round((care - 1) * 100);
   const canSell = sim.canSell(animal.id);
   const illness = animal.sickness && getIllness(animal.sickness.illnessId);
+  const second = animal.sickness?.secondIllnessId
+    ? getIllness(animal.sickness.secondIllnessId)
+    : undefined;
   const clinicUntil = animal.sickness?.atClinicUntil;
   const close = () => appBus.emit('selectAnimal', { id: null });
 
@@ -170,6 +173,12 @@ export function AnimalCard() {
           <li data-testid="sick-status" className={styles.sick}>
             <span aria-hidden="true">{illness?.symptomIcon ?? '🤒'}</span>{' '}
             {illness?.symptoms ?? 'Not feeling well'}
+            {second && (
+              <>
+                {' '}
+                and <span aria-hidden="true">{second.symptomIcon}</span> {second.symptoms}
+              </>
+            )}
           </li>
         )}
         {clinicUntil !== undefined && (

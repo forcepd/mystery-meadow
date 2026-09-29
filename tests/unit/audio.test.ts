@@ -120,8 +120,10 @@ describe('which event makes which sound', () => {
 
   it('a wrong treatment is a gentle "oops"; a cure is the fanfare instead', () => {
     const base = { animal, treatmentId: 'bandage', cost: 10 };
-    expect(sfxForEvent('vetTreated', { ...base, cured: false })).toBe('oops');
-    expect(sfxForEvent('vetTreated', { ...base, cured: true })).toBeNull();
+    expect(sfxForEvent('vetTreated', { ...base, cured: false, helped: false })).toBe('oops');
+    expect(sfxForEvent('vetTreated', { ...base, cured: true, helped: true })).toBeNull();
+    // Half of a tricky case.
+    expect(sfxForEvent('vetTreated', { ...base, cured: false, helped: true })).toBe('trickSuccess');
     expect(sfxForEvent('animalCured', { animal, illnessId: 'sore_paw' })).toBe('fanfare');
   });
 

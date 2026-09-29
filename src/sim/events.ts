@@ -38,13 +38,20 @@ export type SimEvents = {
   poopAppeared: { poop: Poop; animalId: string };
   poopCleaned: { poop: Poop; by?: 'scoopBot' };
   animalRenamed: { animal: Animal };
-  animalSick: { animal: Animal; illnessId: string };
+  animalSick: { animal: Animal; illnessId: string; secondIllnessId?: string };
   /** Checked in at the vet (`free` = Free Clinic, which starts with a wait). */
   vetVisitStarted: { animal: Animal; free: boolean; fee: number };
   /** The Free Clinic wait is over: the vet can see the animal now. */
   clinicReady: { animal: Animal };
   /** A treatment was given (`cost` may be 0). `cured` is false for the wrong treatment. */
-  vetTreated: { animal: Animal; treatmentId: string; cost: number; cured: boolean };
+  /** `helped`: the right treatment for one of its illnesses; `cured`: nothing left to treat. */
+  vetTreated: {
+    animal: Animal;
+    treatmentId: string;
+    cost: number;
+    cured: boolean;
+    helped: boolean;
+  };
   animalCured: { animal: Animal; illnessId: string };
   /** Marked Keep (DESIGN 10.1). */
   petKept: { animal: Animal };

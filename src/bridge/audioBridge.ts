@@ -34,9 +34,12 @@ export function sfxForEvent<K extends keyof SimEvents>(
     case 'itemBought':
     case 'realEstateBought':
       return 'purchase';
-    case 'vetTreated':
-      // A cure plays the fanfare (animalCured); a wrong guess gets a gentle "hmm".
-      return (payload as SimEvents['vetTreated']).cured ? null : 'oops';
+    case 'vetTreated': {
+      // A cure plays the fanfare (animalCured); half of a tricky case gets a cheer; a wrong
+      // guess gets a gentle "hmm".
+      const { cured, helped } = payload as SimEvents['vetTreated'];
+      return cured ? null : helped ? 'trickSuccess' : 'oops';
+    }
     case 'animalPetted':
     case 'treatGiven':
     case 'petDressed':

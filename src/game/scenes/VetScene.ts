@@ -64,8 +64,9 @@ export class VetScene extends Phaser.Scene {
 
     const { events } = this.session.sim;
     const offs = [
-      events.on('vetTreated', ({ animal, treatmentId, cured }) => {
-        if (animal.id === this.animalId) this.showTreatment(treatmentId, cured);
+      events.on('vetTreated', ({ animal, treatmentId, cured, helped }) => {
+        if (animal.id !== this.animalId) return;
+        this.showTreatment(treatmentId, cured, helped);
       }),
       events.on('clinicReady', ({ animal }) => {
         if (animal.id === this.animalId && this.patient) {
@@ -231,11 +232,16 @@ export class VetScene extends Phaser.Scene {
     });
   }
 
-  private showTreatment(treatmentId: string, cured: boolean): void {
+  private showTreatment(treatmentId: string, cured: boolean, helped: boolean): void {
     const p = this.patient;
     if (!p) return;
     const icon = getTreatment(treatmentId)?.icon ?? '💊';
     this.fx.floatText(p.x, p.y - 140, icon, '#2f6f63', 54);
+    if (helped && !cured) {
+      this.fx.burst(p.x, p.y - 80, [0xffd84d, 0x9fe7ff, 0xffffff], 8);
+      this.fx.floatText(p.x + 90, p.y - 200, '1 more!', '#3f7fbf', 36, 200);
+      return;
+    }
     if (cured) {
       this.fx.burst(p.x, p.y - 80, [0xffd84d, 0xff9fc4, 0x9fe7ff, 0xffffff], 14);
       this.fx.hearts(p.x, p.y - 150, 5);

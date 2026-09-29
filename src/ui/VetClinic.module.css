@@ -169,6 +169,20 @@
   text-align: center;
 }
 
+.good {
+  background: #dff5d8;
+  color: #2f6f3a;
+}
+
+.tricky {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: #efe6ff;
+  color: #5b3d99;
+  font-weight: 800;
+}
+
 .cured {
   bottom: auto;
   align-items: center;

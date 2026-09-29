@@ -3,7 +3,7 @@ import { BALANCE } from '../../../src/config/balance';
 import { ILLNESSES } from '../../../src/config/illnesses';
 import { emptySummary, type SimContext } from '../../../src/sim/context';
 import { Rng } from '../../../src/sim/rng';
-import { tickSickness } from '../../../src/sim/systems/sickness';
+import { tickSickness, trickyCasesUnlocked } from '../../../src/sim/systems/sickness';
 import type { Animal, SimState, Zone } from '../../../src/sim/types';
 import { HOUR, MIN, SEC, START, edit, makeAnimal, newSim, play } from './helpers';
 
@@ -307,5 +307,79 @@ describe('effects of sickness (DESIGN 9.3)', () => {
   it('healthy animals can train', () => {
     const h = withAnimals((s) => s.world.animals.push(makeAnimal(s, { id: 'x' })));
     expect(h.sim.canTrain('x').ok).toBe(true);
+  });
+});
+
+describe('tricky cases (DESIGN 9.5 step 6)', () => {
+  it('start at the Farmhouse tier', () => {
+    const state = newSim().sim.toState();
+    const unlocked = (tierId: string) => {
+      state.world.house.tierId = tierId;
+      return trickyCasesUnlocked(state.world);
+    };
+    expect(unlocked('cottage')).toBe(false);
+    expect(unlocked('bungalow')).toBe(false);
+    expect(unlocked('farmhouse')).toBe(true);
+    expect(unlocked('manor')).toBe(true);
+  });
+
+  it('never happen before the Farmhouse', () => {
+    const state = newSim().sim.toState();
+    state.world.house.tierId = 'bungalow';
+    herd(state, 100_000, { needs: { hunger: 0, happiness: 0 } });
+    addPoops(state, 3);
+    tickSickness(ctxFor(state), ROLL_AT);
+    expect(state.world.animals.some((a) => a.sickness?.secondIllnessId)).toBe(false);
+  });
+
+  it('are about 20% of new sicknesses at the Farmhouse, always two different illnesses', () => {
+    const state = newSim().sim.toState();
+    state.world.house.tierId = 'farmhouse';
+    herd(state, 100_000, { needs: { hunger: 0, happiness: 0 } });
+    addPoops(state, 3);
+    const ctx = ctxFor(state);
+    tickSickness(ctx, ROLL_AT);
+    const sick = state.world.animals.filter((a) => a.sickness);
+    const tricky = sick.filter((a) => a.sickness!.secondIllnessId);
+    // ~1200 sick; expected 20% tricky (240), standard deviation ~14.
+    expect(tricky.length / sick.length).toBeGreaterThan(S.trickyCaseChance - 0.05);
+    expect(tricky.length / sick.length).toBeLessThan(S.trickyCaseChance + 0.05);
+    for (const a of tricky) expect(a.sickness!.secondIllnessId).not.toBe(a.sickness!.illnessId);
+    expect(ctx.emit).toHaveBeenCalledWith(
+      'animalSick',
+      expect.objectContaining({ secondIllnessId: expect.any(String) }),
+    );
+  });
+
+  it('never skip an illness the animal is immune to', () => {
+    const state = newSim().sim.toState();
+    state.world.house.tierId = 'farmhouse';
+    const immune = { sniffles: START + HOUR, tummy_trouble: START + HOUR };
+    herd(state, 100_000, { needs: { hunger: 0, happiness: 0 }, immunities: immune });
+    addPoops(state, 3);
+    tickSickness(ctxFor(state), ROLL_AT);
+    for (const a of state.world.animals) {
+      if (!a.sickness) continue;
+      expect(immune).not.toHaveProperty(a.sickness.illnessId);
+      if (a.sickness.secondIllnessId) expect(immune).not.toHaveProperty(a.sickness.secondIllnessId);
+    }
+  });
+
+  it('only the first illness spreads', () => {
+    const state = newSim().sim.toState();
+    state.world.house.tierId = 'farmhouse';
+    state.world.animals.push(
+      makeAnimal(state, {
+        id: 'patient',
+        sickness: { illnessId: 'sniffles', secondIllnessId: 'sore_paw', since: START },
+        nextPoopAt: START + 99 * HOUR,
+      }),
+    );
+    herd(state, 20_000);
+    tickSickness(ctxFor(state), ROLL_AT);
+    const caught = state.world.animals.filter((a) => a.id !== 'patient' && a.sickness);
+    // Mostly caught Sniffles (0.01) vs a few random ones (0.002): sore paw only by chance.
+    const sniffles = caught.filter((a) => a.sickness!.illnessId === 'sniffles').length;
+    expect(sniffles / caught.length).toBeGreaterThan(0.75);
   });
 });

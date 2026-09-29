@@ -20,8 +20,9 @@ export interface VetQuote {
 
 export type ExamResult = { ok: true; clues: readonly ClueDef[] } | { ok: false; reason: string };
 
+/** `helped`: it fixed one of the illnesses; `cured`: nothing is left to treat. */
 export type VetTreatResult =
-  { ok: true; cured: boolean; cost: number } | { ok: false; reason: string };
+  { ok: true; cured: boolean; helped: boolean; cost: number } | { ok: false; reason: string };
 
 /**
  * DESIGN 9.5: a visit costs `visitFee`. [DEFAULT, Phase 4] If the player can't afford the fee
@@ -78,17 +79,36 @@ function checkReady(animal: Animal | undefined): { animal: Animal; illness: Illn
   return { animal, illness };
 }
 
-/** Uses an exam tool on the animal and returns what it reveals. Changes nothing. */
+/** Every illness the animal still has (two in a tricky case). */
+export function illnessesOf(animal: Animal): IllnessDef[] {
+  const s = animal.sickness;
+  if (!s) return [];
+  return [s.illnessId, s.secondIllnessId]
+    .map((id) => (id ? getIllness(id) : undefined))
+    .filter((i): i is IllnessDef => i !== undefined);
+}
+
+/** "All clear" clues (✅) only count when a tool finds nothing else. */
+const ALL_CLEAR = '✅';
+
+/**
+ * Uses an exam tool on the animal and returns what it reveals. Changes nothing. In a tricky case
+ * it finds the clues of both illnesses, and an "all clear" only if neither shows anything.
+ */
 export function examine(world: WorldState, animalId: string, toolId: string): ExamResult {
   const ready = checkReady(findAnimal(world, animalId));
   if (typeof ready === 'string') return { ok: false, reason: ready };
   if (!getExamTool(toolId)) return { ok: false, reason: 'That’s not an exam tool.' };
-  return { ok: true, clues: ready.illness.clues[toolId] ?? [] };
+  const all = illnessesOf(ready.animal).flatMap((i) => i.clues[toolId] ?? []);
+  const unique = all.filter((c, i) => all.findIndex((d) => d.text === c.text) === i);
+  const findings = unique.filter((c) => c.icon !== ALL_CLEAR);
+  return { ok: true, clues: findings.length > 0 ? findings : unique };
 }
 
 /**
- * Gives a treatment from the cabinet. The right one cures the animal and makes it immune to
- * that illness for a while; the wrong one still costs coins (DESIGN 9.5 step 4).
+ * Gives a treatment from the cabinet. The right one cures that illness and makes the animal
+ * immune to it for a while; the wrong one still costs coins (DESIGN 9.5 step 4). A tricky case
+ * needs both right treatments, in any order (DESIGN 9.5 step 6).
  */
 export function vetTreat(
   ctx: SimContext,
@@ -104,14 +124,25 @@ export function vetTreat(
 
   const cost = treatmentCost(world, animal);
   addCoins(ctx, -cost);
-  const cured = treatmentId === illness.treatmentId;
-  if (cured) {
-    delete animal.sickness;
-    animal.immunities[illness.id] = now + minutes(BALANCE.sickness.immunityMinutes);
+  const sickness = animal.sickness!;
+  const secondId = sickness.secondIllnessId;
+  const fixedId = [illness.id, secondId].find(
+    (id) => id !== undefined && getIllness(id)?.treatmentId === treatmentId,
+  );
+  if (fixedId) {
+    animal.immunities[fixedId] = now + minutes(BALANCE.sickness.immunityMinutes);
+    if (fixedId === secondId) delete sickness.secondIllnessId;
+    else if (secondId) {
+      // The first one is better; the second one is what's left.
+      sickness.illnessId = secondId;
+      delete sickness.secondIllnessId;
+    } else delete animal.sickness;
   }
-  ctx.emit('vetTreated', { animal, treatmentId, cost, cured });
-  if (cured) ctx.emit('animalCured', { animal, illnessId: illness.id });
-  return { ok: true, cured, cost };
+  const helped = fixedId !== undefined;
+  const cured = helped && !animal.sickness;
+  ctx.emit('vetTreated', { animal, treatmentId, cost, cured, helped });
+  if (cured) ctx.emit('animalCured', { animal, illnessId: fixedId! });
+  return { ok: true, cured, helped, cost };
 }
 
 /** Ends Free Clinic waits that are over. Runs offline too (waiting is a timer, not care). */

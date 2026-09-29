@@ -32,9 +32,11 @@ export const TOASTS: {
     icon: '💖',
     text: `${displayName(animal)} went to a loving new home! +${price}`,
   }),
-  animalSick: ({ animal, illnessId }) => ({
+  animalSick: ({ animal, illnessId, secondIllnessId }) => ({
     icon: getIllness(illnessId)?.symptomIcon ?? '🤒',
-    text: `Oh no, ${displayName(animal)} looks sick!`,
+    text: secondIllnessId
+      ? `Oh no, ${displayName(animal)} looks sick! A tricky case: two things are wrong.`
+      : `Oh no, ${displayName(animal)} looks sick!`,
   }),
   clinicReady: ({ animal }) => ({
     icon: '🏥',

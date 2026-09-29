@@ -122,6 +122,32 @@ test.describe('health and vet', () => {
     await expect(page.getByTestId('coins')).not.toHaveText('60');
   });
 
+  test('a tricky case: two illnesses, found and fixed one at a time', async ({ page }) => {
+    await startWithSickBunny(page, 200, { secondIllnessId: 'spotty_fever' });
+    const card = await openCard(page);
+    await expect(card.getByTestId('sick-status')).toContainText('and');
+    await press(page, card.getByRole('button', { name: /go to vet for 20/i }));
+    const clinic = page.getByRole('complementary', { name: 'Vet Clinic' });
+    await expect(clinic.getByTestId('tricky-case')).toContainText('Two things are wrong');
+    await page.waitForTimeout(200);
+
+    await useTool(page, 'magnifier');
+    await expect(clinic.getByText('A drippy nose')).toBeVisible();
+    await expect(clinic.getByText('Little red spots')).toBeVisible();
+
+    await press(page, clinic.getByRole('button', { name: 'Cool Pack' }));
+    await expect(clinic.getByText(/fixed one thing! One more to go/)).toBeVisible();
+    await expect(clinic.getByTestId('tricky-case')).toBeHidden();
+    // A fresh notebook: the red spots are gone, the drippy nose is still there.
+    await useTool(page, 'magnifier');
+    await expect(clinic.getByText('A drippy nose')).toBeVisible();
+    await expect(clinic.getByText('Little red spots')).toBeHidden();
+
+    await press(page, clinic.getByRole('button', { name: 'Medicine Drops' }));
+    await expect(clinic.getByText('Bunny is all better!')).toBeVisible();
+    await expect(page.getByTestId('coins')).toHaveText(String(200 - 20 - 2 * 10));
+  });
+
   test('dragging a tool onto the patient examines it; dropping it elsewhere does not', async ({
     page,
   }) => {

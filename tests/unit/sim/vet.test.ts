@@ -86,12 +86,22 @@ describe('treatments (DESIGN 9.5 steps 3-4)', () => {
     h.sim.events.on('animalCured', cured);
     h.sim.goToVet('x');
 
-    expect(h.sim.vetTreat('x', 'flea_bath')).toEqual({ ok: true, cured: false, cost: 10 });
+    expect(h.sim.vetTreat('x', 'flea_bath')).toEqual({
+      ok: true,
+      cured: false,
+      helped: false,
+      cost: 10,
+    });
     expect(h.sim.state.world.coins).toBe(100 - visitFee - treatmentCost);
     expect(h.sim.getAnimal('x')!.sickness?.illnessId).toBe('sore_paw');
     expect(cured).not.toHaveBeenCalled();
 
-    expect(h.sim.vetTreat('x', 'bandage')).toEqual({ ok: true, cured: true, cost: 10 });
+    expect(h.sim.vetTreat('x', 'bandage')).toEqual({
+      ok: true,
+      cured: true,
+      helped: true,
+      cost: 10,
+    });
     expect(h.sim.state.world.coins).toBe(100 - visitFee - 2 * treatmentCost);
     const a = h.sim.getAnimal('x')!;
     expect(a.sickness).toBeUndefined();
@@ -177,8 +187,18 @@ describe('Free Clinic (DESIGN 9.5 step 5)', () => {
 
     const coins = h.sim.state.world.coins;
     expect(h.sim.treatmentCost('x')).toBe(0);
-    expect(h.sim.vetTreat('x', 'bandage')).toEqual({ ok: true, cured: false, cost: 0 });
-    expect(h.sim.vetTreat('x', 'medicine_drops')).toEqual({ ok: true, cured: true, cost: 0 });
+    expect(h.sim.vetTreat('x', 'bandage')).toEqual({
+      ok: true,
+      cured: false,
+      helped: false,
+      cost: 0,
+    });
+    expect(h.sim.vetTreat('x', 'medicine_drops')).toEqual({
+      ok: true,
+      cured: true,
+      helped: true,
+      cost: 0,
+    });
     expect(h.sim.state.world.coins).toBe(coins);
   });
 
@@ -192,10 +212,20 @@ describe('Free Clinic (DESIGN 9.5 step 5)', () => {
   it('on a paid visit, a treatment you can’t afford is free', () => {
     const h = sickSim(visitFee + treatmentCost, 'sleepy_sickness');
     h.sim.goToVet('x');
-    expect(h.sim.vetTreat('x', 'cool_pack')).toEqual({ ok: true, cured: false, cost: 10 });
+    expect(h.sim.vetTreat('x', 'cool_pack')).toEqual({
+      ok: true,
+      cured: false,
+      helped: false,
+      cost: 10,
+    });
     expect(h.sim.state.world.coins).toBe(0);
     expect(h.sim.treatmentCost('x')).toBe(0);
-    expect(h.sim.vetTreat('x', 'vitamin_treat')).toEqual({ ok: true, cured: true, cost: 0 });
+    expect(h.sim.vetTreat('x', 'vitamin_treat')).toEqual({
+      ok: true,
+      cured: true,
+      helped: true,
+      cost: 0,
+    });
   });
 
   it('the wait keeps running while the player is away', () => {
@@ -283,5 +313,91 @@ describe('the game can never get stuck with no money and sick animals', () => {
     expect(h.sim.state.world.animals.some((a) => a.sickness)).toBe(true);
     cureEveryone(h);
     expect(h.sim.state.world.animals.some((a) => a.sickness)).toBe(false);
+  });
+});
+
+describe('tricky cases: two illnesses, two treatments (DESIGN 9.5 step 6)', () => {
+  function tricky(coins = 200) {
+    const h = sickSim(coins, 'sniffles', {
+      sickness: { illnessId: 'sniffles', secondIllnessId: 'spotty_fever', since: START },
+    });
+    h.sim.goToVet('x');
+    return h;
+  }
+
+  it('the exam finds the clues of both illnesses', () => {
+    const h = tricky();
+    const clues = (tool: string) => {
+      const r = h.sim.vetExamine('x', tool);
+      return r.ok ? r.clues.map((c) => c.text) : [];
+    };
+    expect(clues('magnifier')).toEqual(['A drippy nose', 'Little red spots']);
+    expect(clues('thermometer')).toEqual(['Just a tiny bit warm', 'Very hot!']);
+  });
+
+  it('an "all clear" only shows when neither illness shows anything', () => {
+    const h = sickSim(200, 'itchy_fleas', {
+      sickness: { illnessId: 'itchy_fleas', secondIllnessId: 'spotty_fever', since: START },
+    });
+    h.sim.goToVet('x');
+    const r = h.sim.vetExamine('x', 'stethoscope');
+    expect(r.ok && r.clues.map((c) => c.icon)).toEqual(['💓']);
+    const both = sickSim(200, 'itchy_fleas', {
+      sickness: { illnessId: 'itchy_fleas', secondIllnessId: 'sore_paw', since: START },
+    });
+    both.sim.goToVet('x');
+    const fine = both.sim.vetExamine('x', 'stethoscope');
+    expect(fine.ok && fine.clues.map((c) => c.text)).toEqual(['Heart and breathing sound fine']);
+  });
+
+  it('needs both right treatments, in either order; one visit fee, each treatment paid', () => {
+    for (const order of [
+      ['cool_pack', 'medicine_drops'],
+      ['medicine_drops', 'cool_pack'],
+    ]) {
+      const h = tricky();
+      const cured = vi.fn();
+      h.sim.events.on('animalCured', cured);
+      expect(h.sim.state.world.coins).toBe(200 - visitFee);
+      expect(h.sim.vetTreat('x', 'bandage')).toEqual({
+        ok: true,
+        cured: false,
+        helped: false,
+        cost: treatmentCost,
+      });
+      expect(h.sim.vetTreat('x', order[0]!)).toEqual({
+        ok: true,
+        cured: false,
+        helped: true,
+        cost: treatmentCost,
+      });
+      const left = h.sim.getAnimal('x')!.sickness!;
+      expect(left.secondIllnessId).toBeUndefined();
+      expect(left.illnessId).toBe(order[0] === 'cool_pack' ? 'sniffles' : 'spotty_fever');
+      expect(left.visit).toBe('paid'); // Still checked in: no second fee.
+      expect(cured).not.toHaveBeenCalled();
+      // The same treatment again doesn't help twice.
+      expect(h.sim.vetTreat('x', order[0]!)).toMatchObject({ cured: false, helped: false });
+      expect(h.sim.vetTreat('x', order[1]!)).toMatchObject({ cured: true, helped: true });
+      expect(h.sim.getAnimal('x')!.sickness).toBeUndefined();
+      expect(cured).toHaveBeenCalledOnce();
+      expect(h.sim.state.world.coins).toBe(200 - visitFee - 4 * treatmentCost);
+    }
+  });
+
+  it('makes the animal immune to both illnesses afterwards', () => {
+    const h = tricky();
+    h.sim.vetTreat('x', 'medicine_drops');
+    h.sim.vetTreat('x', 'cool_pack');
+    const immune = h.sim.getAnimal('x')!.immunities;
+    expect(immune.sniffles).toBe(START + BALANCE.sickness.immunityMinutes * MIN);
+    expect(immune.spotty_fever).toBe(START + BALANCE.sickness.immunityMinutes * MIN);
+  });
+
+  it('works at the Free Clinic too (all free)', () => {
+    const h = tricky(0);
+    play(h, freeClinicWaitMinutes * MIN + SEC);
+    expect(h.sim.vetTreat('x', 'cool_pack')).toMatchObject({ helped: true, cost: 0 });
+    expect(h.sim.vetTreat('x', 'medicine_drops')).toMatchObject({ cured: true, cost: 0 });
   });
 });

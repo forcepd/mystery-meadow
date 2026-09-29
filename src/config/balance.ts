@@ -82,6 +82,10 @@ export const BALANCE = deepFreeze({
     lowHappinessBelow: 25,
     // DESIGN 9.1: every simulated minute each healthy animal rolls once.
     rollSeconds: 60,
+    // DESIGN 9.5 step 6 (Phase 10): "tricky cases" with two illnesses that need two treatments,
+    // from the Farmhouse tier. [DEFAULT, your choice] 20% of new (not caught) sicknesses.
+    trickyCaseChance: 0.2,
+    trickyCaseMinTier: 'farmhouse',
   },
 
   // DESIGN 9.5. [DEFAULT, Phase 4] Free Clinic: if coins < visitFee + treatmentCost at check-in,

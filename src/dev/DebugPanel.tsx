@@ -58,8 +58,8 @@ export default function DebugPanel() {
     setMessage(`Advanced ${minutes} min`);
   };
 
-  const makeSick = (all: boolean) => {
-    const n = debugMakeSick(sim, { all, ...(illnessId ? { illnessId } : {}) });
+  const makeSick = (all: boolean, tricky = false) => {
+    const n = debugMakeSick(sim, { all, tricky, ...(illnessId ? { illnessId } : {}) });
     setMessage(n === 0 ? 'Nobody healthy to make sick' : `${n} got sick`);
   };
   const sicknessOn = sim.state.world.settings.sicknessEnabled;
@@ -216,6 +216,9 @@ export default function DebugPanel() {
         </button>
         <button type="button" className={styles.small} onClick={() => makeSick(true)}>
           🤒 All
+        </button>
+        <button type="button" className={styles.small} onClick={() => makeSick(false, true)}>
+          🤒🤒 Tricky
         </button>
         <button type="button" className={styles.small} onClick={() => debugCureAll(sim)}>
           💊 Cure all

@@ -38,10 +38,25 @@ export function sickChance(world: WorldState, animal: Animal): number {
   );
 }
 
-/** Makes an animal sick right now and tells the player (symptoms show immediately, DESIGN 9.2). */
-export function makeSick(ctx: SimContext, animal: Animal, illnessId: string, now: Ms): void {
-  animal.sickness = { illnessId, since: now };
-  ctx.emit('animalSick', { animal, illnessId });
+/**
+ * Makes an animal sick right now and tells the player (symptoms show immediately, DESIGN 9.2).
+ * `secondIllnessId` makes it a tricky case (DESIGN 9.5 step 6).
+ */
+export function makeSick(
+  ctx: SimContext,
+  animal: Animal,
+  illnessId: string,
+  now: Ms,
+  secondIllnessId?: string,
+): void {
+  animal.sickness = { illnessId, since: now, ...(secondIllnessId ? { secondIllnessId } : {}) };
+  ctx.emit('animalSick', { animal, illnessId, ...(secondIllnessId ? { secondIllnessId } : {}) });
+}
+
+/** Tricky two-illness cases start at this house tier (DESIGN 9.5 step 6). */
+export function trickyCasesUnlocked(world: WorldState): boolean {
+  const tiers = BALANCE.houseTiers.map((t) => t.id as string);
+  return tiers.indexOf(world.house.tierId) >= tiers.indexOf(BALANCE.sickness.trickyCaseMinTier);
 }
 
 /**
@@ -66,7 +81,8 @@ export function tickSickness(ctx: SimContext, t: Ms): void {
   for (const a of world.animals) {
     if (isContagious(a)) contagious.set(a.zone, [...(contagious.get(a.zone) ?? []), a]);
   }
-  const plans: { animal: Animal; illnessId: string }[] = [];
+  const tricky = trickyCasesUnlocked(world);
+  const plans: { animal: Animal; illnessId: string; second?: string }[] = [];
   for (const animal of world.animals) {
     if (animal.sickness) continue;
     pruneImmunities(animal, t);
@@ -77,6 +93,7 @@ export function tickSickness(ctx: SimContext, t: Ms): void {
     if (roll >= base + perSick * neighbors.length) continue;
 
     let illnessId: string | undefined;
+    let second: string | undefined;
     if (roll >= base) {
       const from = neighbors[Math.min(neighbors.length - 1, Math.floor((roll - base) / perSick))];
       const caught = from?.sickness?.illnessId;
@@ -84,10 +101,15 @@ export function tickSickness(ctx: SimContext, t: Ms): void {
     } else {
       const options = ILLNESSES.filter((i) => !isImmune(animal, i.id, t));
       if (options.length > 0) illnessId = ctx.rng.pick(options).id;
+      // A tricky case: a second, different illness on top (never for a caught one).
+      if (illnessId && tricky && ctx.rng.next() < BALANCE.sickness.trickyCaseChance) {
+        const others = options.filter((i) => i.id !== illnessId);
+        if (others.length > 0) second = ctx.rng.pick(others).id;
+      }
     }
-    if (illnessId) plans.push({ animal, illnessId });
+    if (illnessId) plans.push({ animal, illnessId, ...(second ? { second } : {}) });
   }
-  for (const { animal, illnessId } of plans) makeSick(ctx, animal, illnessId, t);
+  for (const { animal, illnessId, second } of plans) makeSick(ctx, animal, illnessId, t, second);
 }
 
 /** Drops immunities that have run out, so saves don't collect them forever. */
