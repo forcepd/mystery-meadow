@@ -13,8 +13,12 @@ export const LAYOUT = {
   gate: { x: 1090, width: 130 },
   /** Where mystery visitors wait, just outside the gate (queue goes up the path). */
   gateQueue: { x: 1155, y: 280, stepX: -95, stepY: -40 },
-  /** Normalized animal positions (0..1) map into this rectangle. */
-  yard: { left: 110, top: 470, right: 1170, bottom: 730 },
+  /**
+   * Normalized animal positions (0..1) map into this rectangle. The bottom stays above the HUD
+   * menu, which covers the world from about y = 698 on the widest screens (and iPad Safari with
+   * its toolbars), so poops, finds, and animals there can always be tapped.
+   */
+  yard: { left: 110, top: 430, right: 1170, bottom: 665 },
 } as const;
 
 /** Where the HUD's coin counter sits over the world (coins from a sale fly here). */

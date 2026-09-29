@@ -1,3 +1,4 @@
+import { zoneToWorld } from '../../src/game/layout';
 import { expect, test } from '@playwright/test';
 import {
   animalTapPoint,
@@ -10,6 +11,7 @@ import {
   tapWorld,
   testAnimal,
   testVisitor,
+  poopTapPoint,
 } from './helpers';
 
 // Reduced motion stops the render-only ambling, so animals stay exactly where the sim put them.
@@ -126,5 +128,72 @@ test.describe('first playable yard', () => {
   test('the dev Debug Panel is not in the production build', async ({ page }) => {
     await openGame(page);
     await expect(page.getByRole('button', { name: /debug/i })).toHaveCount(0);
+  });
+});
+
+test.describe('nothing in the yard hides under the menu', () => {
+  // A wide screen (or iPad Safari with its toolbars) puts the menu highest over the world.
+  test.use({ viewport: { width: 1280, height: 720 } });
+
+  test('poops in the bottom corners and middle can be tapped', async ({ page }) => {
+    const spots = [
+      { x: 0, y: 1 },
+      { x: 0.5, y: 1 },
+      { x: 1, y: 1 },
+    ];
+    await seedSave(
+      page,
+      buildSave((s, now) => {
+        s.world.nextVisitorAt = now + 99 * 3_600_000;
+        s.world.settings.sicknessEnabled = false;
+        spots.forEach((position, i) =>
+          s.world.poops.push({ id: `p${i}`, zone: 'yard', position, createdAt: now }),
+        );
+      }),
+    );
+    await page.goto('./');
+    await canvasReady(page);
+    // A tap the menu would catch fails here ("intercepts pointer events"), so this is the test.
+    for (const p of spots) await tapWorld(page, poopTapPoint(p));
+    // All three really got cleaned: the "Clean up 3 poops" goal is done.
+    await press(page, page.getByTestId('goals-button'));
+    await expect(
+      page
+        .getByRole('listitem', { name: 'Clean up 3 poops' })
+        .getByRole('button', { name: /collect/i }),
+    ).toBeVisible();
+  });
+
+  test('poops by the bottom of the house floor can be tapped too', async ({ page }) => {
+    const spots = [
+      { x: 0, y: 1 },
+      { x: 0.5, y: 1 },
+      { x: 1, y: 1 },
+    ];
+    await seedSave(
+      page,
+      buildSave((s, now) => {
+        s.world.nextVisitorAt = now + 99 * 3_600_000;
+        s.world.settings.sicknessEnabled = false;
+        spots.forEach((position, i) =>
+          s.world.poops.push({ id: `p${i}`, zone: 'house', position, createdAt: now }),
+        );
+      }),
+    );
+    await page.goto('./');
+    await canvasReady(page);
+    await press(
+      page,
+      page.getByRole('navigation', { name: 'Menu' }).getByRole('button', { name: /house/i }),
+    );
+    await expect(page.getByTestId('game-canvas')).toHaveAttribute('data-scene', 'house');
+    await page.waitForTimeout(300);
+    for (const p of spots) await tapWorld(page, zoneToWorld('house', p));
+    await press(page, page.getByTestId('goals-button'));
+    await expect(
+      page
+        .getByRole('listitem', { name: 'Clean up 3 poops' })
+        .getByRole('button', { name: /collect/i }),
+    ).toBeVisible();
   });
 });
