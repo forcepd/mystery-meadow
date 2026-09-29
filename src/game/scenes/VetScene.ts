@@ -15,6 +15,12 @@ const TABLE = 0xffffff;
 const TABLE_EDGE = 0x9db7c9;
 const TRAY = 0xfff8ea;
 const TRAY_EDGE = 0xd6c29a;
+/**
+ * Tools draw above the patient, whose depth follows its y position (like every animal), and
+ * below the effects (10 000). The tool being used or dragged goes on top of the others.
+ */
+const TOOL_DEPTH = 5_000;
+const ACTIVE_TOOL_DEPTH = 5_001;
 
 interface ToolButton {
   def: ExamToolDef;
@@ -159,7 +165,7 @@ export class VetScene extends Phaser.Scene {
       .setOrigin(0.5);
     const box = this.add.container(home.x, home.y, [bg, icon, label]).setSize(width, height);
     box.setInteractive({ useHandCursor: true, draggable: true });
-    box.setDepth(20);
+    box.setDepth(TOOL_DEPTH);
     const tool: ToolButton = { def, box, home };
     this.tools.push(tool);
 
@@ -167,13 +173,13 @@ export class VetScene extends Phaser.Scene {
     box.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => (dragged = false));
     box.on(Phaser.Input.Events.GAMEOBJECT_DRAG_START, () => {
       dragged = true;
-      box.setDepth(30).setScale(1.08);
+      box.setDepth(ACTIVE_TOOL_DEPTH).setScale(1.08);
     });
     box.on(Phaser.Input.Events.GAMEOBJECT_DRAG, (_p: unknown, x: number, y: number) =>
       box.setPosition(x, y),
     );
     box.on(Phaser.Input.Events.GAMEOBJECT_DRAG_END, () => {
-      box.setDepth(20).setScale(1);
+      box.setScale(1);
       const { x, y } = VET_LAYOUT.patient;
       const near = Phaser.Math.Distance.Between(box.x, box.y, x, y - 60) < VET_LAYOUT.dropRadius;
       if (near) this.useTool(tool);
@@ -193,7 +199,10 @@ export class VetScene extends Phaser.Scene {
       angle: 0,
       duration: this.reducedMotion() ? 0 : 260,
       ease: 'Back.easeOut',
-      onComplete: () => onDone?.(),
+      onComplete: () => {
+        tool.box.setDepth(TOOL_DEPTH);
+        onDone?.();
+      },
     });
   }
 
@@ -210,6 +219,7 @@ export class VetScene extends Phaser.Scene {
       return;
     }
     this.busy = true;
+    tool.box.setDepth(ACTIVE_TOOL_DEPTH);
     const { x, y } = VET_LAYOUT.patient;
     const at = { x: x + 70, y: y - 70 };
     const still = this.reducedMotion();

@@ -1106,3 +1106,7 @@ The spec's "runs at 60 fps on the target iPad and passes the manual checklist in
 - The onboarding e2e test (Phase 8) failed once while the whole suite ran at full speed, then passed 3 times in a row on its own and in the next full run. It's probably timing under load; I'll keep an eye on it.
 - The game world itself (the Phaser canvas) can't be read by a screen reader. Everything important also shows in the HTML screens (card, toasts, HUD).
 
+
+### Bugs found and fixed (after Phase 10)
+
+- **Vet exam tools hid behind the patient.** Animals set their draw depth to their y position every frame (the patient sits at y = 452), but the tools used depths 20 and 30. The tools now draw at 5000, and the one being used or dragged at 5001. That's above any animal and below the effects (10 000). Checked with a screenshot of a tool mid-exam.
