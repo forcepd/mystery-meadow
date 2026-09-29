@@ -14,6 +14,7 @@ Every art, audio, and font asset shipped in the game is listed here with its sou
 | ----------------------------------------------------------------------------- | ------------------------------- | ------------- |
 | App icon / favicon (`public/icons/favicon.svg` and the PNGs rendered from it) | Original, made for this project | Project-owned |
 | Placeholder meadow scene and HUD shapes                                       | Original, drawn in code         | Project-owned |
+| Animals (all 21 species, colors, Sparkle), pet outfits, lures, furniture, and beds: parametric SVG in `src/art/` (Phase 10) | Original, drawn in code | Project-owned |
 
 ## Audio
 

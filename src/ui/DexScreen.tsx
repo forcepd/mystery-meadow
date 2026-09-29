@@ -74,7 +74,7 @@ export function DexScreen() {
                               <li
                                 key={v.id}
                                 className={`${styles.dot} ${found ? '' : styles.missing}`}
-                                style={found ? { background: v.placeholderColor } : undefined}
+                                style={found ? { background: v.colors.main } : undefined}
                                 title={found ? v.name : '???'}
                                 aria-label={found ? v.name : 'Not found yet'}
                               />
@@ -94,7 +94,7 @@ export function DexScreen() {
                         className={`${styles.dexCard} ${styles.unknown}`}
                         aria-label="Undiscovered animal"
                       >
-                        <Silhouette />
+                        <Silhouette speciesId={e.species.id} />
                         <span className={styles.dexName}>???</span>
                         <span className={styles.stars} style={{ color: style.color }}>
                           {starString(rarity)}

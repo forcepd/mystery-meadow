@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { avatarDataUri } from '../art/avatarSvg';
 import type { AvatarLoadout } from '../profile/avatar';
 
-/** The layered avatar as an image (placeholder art until Phase 10). */
+/** The layered avatar as an image. */
 export function AvatarView({
   loadout,
   height = 200,

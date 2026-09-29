@@ -3,9 +3,9 @@ import type { AvatarLoadout } from '../profile/avatar';
 import { wornIn } from '../profile/avatar';
 
 /**
- * Layered placeholder avatar (DESIGN 16.2: parametric SVG parts with color slots). Pure: turns
+ * Layered avatar (DESIGN 16.2: parametric SVG parts with color slots). Pure: turns
  * a loadout into an SVG string (viewBox 120 x 200, feet at the bottom). React shows it as an
- * <img>, Phaser loads it as a texture. The Phase 10 art pass replaces the shapes, not the API.
+ * <img>, Phaser loads it as a texture.
  */
 
 const OUTLINE = '#4a3b33';

@@ -909,3 +909,72 @@ A brand-new player goes from first launch to their first sale entirely through t
 - Portraits in the card, training, and wardrobe screens are plain color circles until the Phase 10 art pass (the yard sprites do show the outfits).
 - Trick moves are simple tweens; each trick could get its own animation in Phase 10.
 - The Simon-says round lives in React, not a Phaser `TrainingScene` as DESIGN 18.3's folder sketch suggests; it keeps all the rules in the sim either way.
+
+---
+
+## Phase 10: Art, Audio, and Polish (in progress)
+
+Your choices before starting:
+- **Audio:** made in code with Web Audio. It's original, needs no files or licenses, and makes no network calls.
+- **Tricky vet cases:** from the Farmhouse tier on, 20% of new sicknesses (tunable) come with two illnesses. Each needs its own right treatment, and there's only one visit fee.
+- **Pacing:** stop after the art (step A) for a review.
+
+### Step A: Art pass (built 2026-09-28)
+
+**Parametric species art (DESIGN 16.2)**
+
+- **`src/config/species.ts`:** every species now has an `art` recipe that picks shared parts:
+  - Body shape: round, long, bird, tall, or pony.
+  - Head size and width.
+  - Ears (long, pointy, floppy, round, fluffy, tufts, pig, gills) and tail (puff, thin, wag, bushy, ringed, curl, feather, flat, fin, flowing, dragon).
+  - Nose (button, snout, big nose, pig, beak, bill, smile) and eyes (big, owl).
+  - Markings (belly, muzzle, spots, patches, mask, tuxedo, cheek marks, socks, stripes, face disc, tipped ears, bands).
+  - Extras (whiskers, cheek pouches, feather wings, bat wings, flippers, spines, wool, horn, horns, mane, tuft, moon mark, webbed feet).
+- **Variant colors:** each variant has named color slots (`main`, `light`, `accent`, and optional `dark`), plus optional markings of its own, like a spotted puppy or a calico kitten. These replace `placeholderColor`.
+  - Variant ids and their order didn't change, so saves and random picks are unaffected.
+- **`src/art/animalSvg.ts`:** builds any species, color, Sparkle, and outfit as one SVG.
+  - **Sparkle** is a palette swap: lighter colors, a rainbow shimmer, and glitter twinkles. The world's twinkling stars stay too.
+  - **Silhouette** mode draws the dark shape for undiscovered Dex entries.
+  - The mystery visitor at the gate stays a generic shape, so nothing is given away before the reveal.
+- **Outfit anchors** are now worked out from each species' head and body sizes. Outfits are drawn into the same SVG:
+  - Capes go behind the body, and sweaters and tutus under the head.
+  - Scarves, face items, and hats go on top.
+  - Glasses line up with each species' eyes.
+- **`src/art/itemSvg.ts`:**
+  - Its own drawing for all 10 lures, 15 furniture items, and 3 beds, sized to the footprint. Rotated items turn their picture.
+  - Any future item without a drawing gets a tidy one for its category, so a new item still only needs a data entry.
+- **`src/assets/manifest.ts`:** looks up art by asset key. An entry can point at an image URL (`{ kind: 'image' }`), so hand-drawn art can replace any species or item later without changing game logic.
+
+**Wired in**
+
+- **World:** animals, visitors, and placed items draw textures built from the SVG, via `src/game/sprites/svgTexture.ts`.
+  - Each texture is built once at 2x for Retina, then shared.
+  - The old `critter.ts` and `outfits.ts` placeholder drawings are gone.
+  - Status badges sit higher, above taller ears and horns.
+- **React:** `PetPortrait` shows a head-and-shoulders picture with the outfit in the Animal Card, Training, Pet Wardrobe, Pets, and Dex screens. This fixes the Phase 9 "plain color circles" issue.
+  - The Dex shows each undiscovered species' silhouette with a "?".
+
+**Tests**
+
+- 12 new unit tests (449 in total). They cover:
+  - Every species and color drawn plain, as Sparkle, and as a silhouette, with valid SVG whose tags balance, and its colors really used.
+  - Every species looks different.
+  - Every species in every outfit.
+  - Draw order: a cape goes behind the body and a hat on top.
+  - Fallbacks for unknown looks, texture keys, and the art origin.
+  - Every lure, furniture item, and bed has its own art at every rotation.
+  - Every asset key is in the manifest.
+- The e2e suite passes unchanged: 226 passed, 2 skipped, across Chromium, iPad mini WebKit, and iPad Pro WebKit.
+- The yard, house, and Dex were checked in WebKit screenshots.
+
+### Deviations and defaults (step A): please confirm or change
+
+1. **Textures are built on demand, not all at load.** Building every species, color, and Sparkle up front would be about 180 textures (about 60 MB of GPU memory), which is too much for an iPad. Each look is built the first time it's seen, which takes a few milliseconds.
+2. **The avatar is unchanged.** It was already parametric SVG in Phase 8, in the same outlined, soft-color style.
+3. **Unchanged:** the food bowl (its sprite shows how much food is left), poop, the Scoop Bot (still an emoji), and the yard and house backgrounds. The spec's art list is species, avatar, furniture, and lures.
+4. **Rotated furniture turns its top-down picture** rather than having a separate side view.
+
+### Known issues (step A)
+
+- Sparkle's rainbow shimmer is subtle on dark colors (e.g. a Sparkle black kitten). The twinkling stars still mark it.
+- The texture cache never empties during a session. It's limited by how many different looks you see (outfit combinations add some).

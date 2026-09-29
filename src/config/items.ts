@@ -2,7 +2,7 @@ import { deepFreeze } from './deepFreeze';
 
 /**
  * Everything the player can buy and place (DESIGN 6.5, 12.3, 12.4, 13.1). Adding an item is a
- * data entry here (plus art in Phase 10). Prices, coziness, and footprints are [DEFAULT, Phase 6]
+ * data entry here (plus, optionally, its own drawing in src/art/itemSvg.ts). Prices, coziness, and footprints are [DEFAULT, Phase 6]
  * except the yard lures, which are DESIGN 6.5 verbatim.
  */
 
@@ -16,9 +16,9 @@ interface BaseItemDef {
   readonly id: string;
   readonly name: string;
   readonly cost: number;
-  /** Placeholder icon (store cards and world art) until the Phase 10 art pass. */
+  /** Icon for store cards and toasts. */
   readonly icon: string;
-  /** Placeholder color for the world art. */
+  /** Main color of the item's art. */
   readonly color: string;
   readonly assetKey: string;
 }
@@ -85,7 +85,7 @@ export type OutfitSlot = 'head' | 'body' | 'face';
 
 /**
  * Pet outfit (DESIGN 10.3), from the Home Store's Pet Boutique. Bought once, then any number of
- * animals can wear it (your choice). `kind` picks the placeholder drawing.
+ * animals can wear it (your choice). `kind` picks the drawing in src/art/outfitSvg.ts.
  */
 export interface PetOutfitItemDef extends BaseItemDef {
   readonly category: 'petOutfit';

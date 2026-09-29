@@ -18,7 +18,7 @@ export function starString(rarity: Rarity): string {
   return '★'.repeat(RARITY_STYLE[rarity].stars);
 }
 
-/** Placeholder art colors (Phase 10 replaces the art). */
+/** '#rrggbb' to the number Phaser's drawing calls take. */
 export function parseHex(color: string): number {
   return Number.parseInt(color.replace('#', ''), 16);
 }

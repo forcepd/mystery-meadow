@@ -1,8 +1,8 @@
 import { deepFreeze } from './deepFreeze';
 
 /**
- * Tricks (DESIGN 11). `move` is how the placeholder art performs it in the world (the Phase 10
- * art pass can give each its own animation). Adding a trick = a data entry here.
+ * Tricks (DESIGN 11). `move` is the tween the animal plays when it performs the trick in the
+ * world. Adding a trick = a data entry here.
  */
 export type TrickMove = 'hop' | 'spin' | 'wiggle' | 'roll' | 'bow';
 

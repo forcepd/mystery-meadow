@@ -1,12 +1,11 @@
 import Phaser from 'phaser';
-import { parseHex } from '../../art/palette';
-import { displayName, variantOf } from '../../bridge/describe';
+import { animalArt } from '../../assets/manifest';
+import { displayName } from '../../bridge/describe';
 import { getIllness, type SymptomFx } from '../../config/illnesses';
 import type { Badge } from '../../sim/GameSim';
 import type { Animal, Vec2 } from '../../sim/types';
 import { COLORS, FONT, TEXT_RESOLUTION } from '../constants';
-import { drawCritter } from './critter';
-import { drawOutfit } from './outfits';
+import { SVG_RESOLUTION, ensureTexture } from './svgTexture';
 import { showSymptom, type SymptomHandle } from './symptoms';
 import type { TrickMove } from '../../config/tricks';
 
@@ -41,12 +40,10 @@ export class AnimalSprite extends Phaser.GameObjects.Container {
   /** Body motion from symptoms (limp, shiver), separate from breathing and hopping. */
   private readonly pose: Phaser.GameObjects.Container;
   private readonly symptomLayer: Phaser.GameObjects.Container;
-  /** Pet outfits (DESIGN 10.3): capes behind the animal, everything else in front. */
-  private readonly outfitBack: Phaser.GameObjects.Graphics;
-  private readonly outfitFront: Phaser.GameObjects.Graphics;
-  private outfitKey = '';
   private symptom: { key: string; handle: SymptomHandle } | undefined;
-  private readonly art: Phaser.GameObjects.Graphics;
+  /** The animal's picture, outfit included (DESIGN 16.2, 10.3). */
+  private readonly art: Phaser.GameObjects.Image;
+  private artKey = '';
   private readonly label: Phaser.GameObjects.Text;
   private readonly badge: Phaser.GameObjects.Text;
   private readonly selectRing: Phaser.GameObjects.Ellipse;
@@ -79,16 +76,9 @@ export class AnimalSprite extends Phaser.GameObjects.Container {
       .setStrokeStyle(5, COLORS.select)
       .setVisible(false);
     const shadow = scene.add.ellipse(0, 24, 76, 20, 0x000000, 0.12);
-    this.art = scene.add.graphics();
+    this.art = scene.add.image(0, 0, '__DEFAULT').setVisible(false);
     this.symptomLayer = scene.add.container(0, 0);
-    this.outfitBack = scene.add.graphics();
-    this.outfitFront = scene.add.graphics();
-    this.breather = scene.add.container(0, 0, [
-      this.outfitBack,
-      this.art,
-      this.outfitFront,
-      this.symptomLayer,
-    ]);
+    this.breather = scene.add.container(0, 0, [this.art, this.symptomLayer]);
     this.pose = scene.add.container(0, 0, [this.breather]);
     this.figure = scene.add.container(0, 0, [this.pose]);
     this.label = scene.add
@@ -103,12 +93,11 @@ export class AnimalSprite extends Phaser.GameObjects.Container {
       })
       .setOrigin(0.5, 0);
     this.badge = scene.add
-      .text(0, -92, '', { fontSize: '28px', resolution: TEXT_RESOLUTION })
+      .text(0, -106, '', { fontSize: '28px', resolution: TEXT_RESOLUTION })
       .setOrigin(0.5);
     this.add([this.selectRing, shadow, this.figure, this.label, this.badge]);
 
-    const variant = variantOf(animal);
-    drawCritter(this.art, parseHex(variant?.placeholderColor ?? '#cccccc'));
+    this.syncArt(animal);
     if (animal.isSparkle) this.addSparkles();
 
     this.setSize(96, 120);
@@ -142,11 +131,7 @@ export class AnimalSprite extends Phaser.GameObjects.Container {
       .map((i) => (i === 'sick' && sickIcon) || ICONS[i])
       .join('');
     this.syncSymptom(illness?.symptomFx);
-    const outfitKey = JSON.stringify(animal.outfit);
-    if (outfitKey !== this.outfitKey) {
-      this.outfitKey = outfitKey;
-      drawOutfit(this.outfitBack, this.outfitFront, animal);
-    }
+    this.syncArt(animal);
     const key = `${displayName(animal)}|${icons}|${baby}`;
     if (key !== this.lastKey) {
       this.lastKey = key;
@@ -154,7 +139,7 @@ export class AnimalSprite extends Phaser.GameObjects.Container {
       this.badge.setText(icons);
       this.baseScale = baby ? BABY_SCALE : 1;
       this.figure.setScale(this.baseScale * this.facing, this.baseScale);
-      this.badge.setY(baby ? -70 : -92);
+      this.badge.setY(baby ? -78 : -106);
     }
     if (home.x !== this.home.x || home.y !== this.home.y) {
       this.home = home;
@@ -200,6 +185,21 @@ export class AnimalSprite extends Phaser.GameObjects.Container {
         this.stopHopping();
         onDone?.();
       },
+    });
+  }
+
+  /** Shows the animal's picture, building its texture the first time this look is seen. */
+  private syncArt(animal: Animal): void {
+    const art = animalArt(animal);
+    if (art.key === this.artKey) return;
+    this.artKey = art.key;
+    ensureTexture(this.scene, art.key, art.uri, art.size, (key) => {
+      if (!this.scene || this.artKey !== key) return;
+      this.art
+        .setTexture(key)
+        .setOrigin(art.origin.x, art.origin.y)
+        .setScale(1 / SVG_RESOLUTION)
+        .setVisible(true);
     });
   }
 

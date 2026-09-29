@@ -1,9 +1,10 @@
 import Phaser from 'phaser';
-import { RARITY_STYLE, parseHex, starString } from '../../art/palette';
-import { speciesName, variantOf } from '../../bridge/describe';
+import { RARITY_STYLE, starString } from '../../art/palette';
+import { animalArt, mysteryArt, type ArtRequest } from '../../assets/manifest';
+import { speciesName } from '../../bridge/describe';
 import type { Vec2, Visitor } from '../../sim/types';
 import { FONT, TEXT_RESOLUTION } from '../constants';
-import { drawCritter } from './critter';
+import { SVG_RESOLUTION, ensureTexture } from './svgTexture';
 
 /**
  * A mystery visitor at the gate: a wobbling silhouette with a "?" bubble until revealed,
@@ -12,7 +13,8 @@ import { drawCritter } from './critter';
 export class VisitorSprite extends Phaser.GameObjects.Container {
   readonly visitorId: string;
   private readonly figure: Phaser.GameObjects.Container;
-  private readonly art: Phaser.GameObjects.Graphics;
+  private readonly art: Phaser.GameObjects.Image;
+  private artKey = '';
   private readonly bubble: Phaser.GameObjects.Text;
   private readonly title: Phaser.GameObjects.Text;
   private wobble?: Phaser.Tweens.Tween;
@@ -32,7 +34,7 @@ export class VisitorSprite extends Phaser.GameObjects.Container {
     this.revealed = visitor.revealed;
 
     const shadow = scene.add.ellipse(0, 24, 76, 20, 0x000000, 0.12);
-    this.art = scene.add.graphics();
+    this.art = scene.add.image(0, 0, '__DEFAULT').setVisible(false);
     this.figure = scene.add.container(0, 0, [this.art]);
     this.bubble = scene.add
       .text(0, -100, '?', {
@@ -112,15 +114,14 @@ export class VisitorSprite extends Phaser.GameObjects.Container {
 
   private draw(visitor: Visitor): void {
     if (!this.revealed) {
-      drawCritter(this.art, 0, true);
+      this.show(mysteryArt());
       this.bubble.setText('?').setVisible(true);
       this.title.setVisible(false);
       return;
     }
     this.wobble?.stop();
     this.figure.setAngle(0);
-    const variant = variantOf(visitor.roll);
-    drawCritter(this.art, parseHex(variant?.placeholderColor ?? '#cccccc'));
+    this.show(animalArt(visitor.roll));
     const style = RARITY_STYLE[visitor.roll.rarity];
     const sparkle = visitor.roll.isSparkle ? '✦ Sparkle ' : '';
     this.title
@@ -131,6 +132,18 @@ export class VisitorSprite extends Phaser.GameObjects.Container {
       .setVisible(true);
     // Shown until it walks in; if it has to wait, the kid knows why.
     this.bubble.setText('No room!').setFontSize(20).setVisible(true);
+  }
+
+  private show(art: ArtRequest): void {
+    this.artKey = art.key;
+    ensureTexture(this.scene, art.key, art.uri, art.size, (key) => {
+      if (!this.scene || this.artKey !== key) return;
+      this.art
+        .setTexture(key)
+        .setOrigin(art.origin.x, art.origin.y)
+        .setScale(1 / SVG_RESOLUTION)
+        .setVisible(true);
+    });
   }
 
   private pop(): void {

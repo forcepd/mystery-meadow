@@ -105,7 +105,9 @@ describe('SPECIES', () => {
       expect(s.variants.length, s.id).toBeGreaterThanOrEqual(3);
       expect(s.variants.length, s.id).toBeLessThanOrEqual(5);
       expect(new Set(s.variants.map((v) => v.id)).size, s.id).toBe(s.variants.length);
-      for (const v of s.variants) expect(v.placeholderColor).toMatch(/^#[0-9a-f]{6}$/i);
+      for (const v of s.variants)
+        for (const c of Object.values(v.colors))
+          expect(c, `${s.id} ${v.id}`).toMatch(/^#[0-9a-f]{6}$/i);
     }
   });
 

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { RARITY_STYLE, starString } from '../art/palette';
 import { appBus } from '../bridge/appBus';
-import { displayName, formatCountdown, speciesName, variantOf } from '../bridge/describe';
+import { displayName, formatCountdown, speciesName } from '../bridge/describe';
 import { BALANCE } from '../config/balance';
 import { getIllness } from '../config/illnesses';
 import { getTrick } from '../config/tricks';
@@ -9,6 +9,7 @@ import type { Badge, GameSim } from '../sim/GameSim';
 import type { Animal } from '../sim/types';
 import styles from './AnimalCard.module.css';
 import common from './common.module.css';
+import { PetPortrait } from './PetPortrait';
 import { useSim } from './session';
 import { useAppEvent } from './useAppEvent';
 
@@ -64,7 +65,6 @@ export function AnimalCard() {
   const now = sim.now();
   const badges = sim.badges(animal.id);
   const rarity = RARITY_STYLE[animal.rarity];
-  const color = variantOf(animal)?.placeholderColor ?? '#ccc';
   const price = sim.salePrice(animal.id) ?? 0;
   const care = sim.careMultiplier(animal.id) ?? 1;
   const carePercent = Math.round((care - 1) * 100);
@@ -110,11 +110,7 @@ export function AnimalCard() {
       </button>
 
       <div className={styles.header}>
-        <div
-          className={`${styles.portrait} ${animal.isSparkle ? styles.sparkle : ''}`}
-          style={{ background: color }}
-          aria-hidden="true"
-        />
+        <PetPortrait animal={animal} size={80} />
         <div className={styles.titles}>
           {editingName ? (
             <NameEditor sim={sim} animal={animal} onDone={() => setEditingName(false)} />

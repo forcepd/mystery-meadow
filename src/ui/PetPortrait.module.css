@@ -6,6 +6,17 @@
   flex: none;
   border-radius: 50%;
   border: 4px solid #4a3b33;
+  background: radial-gradient(circle at 50% 35%, #fbfff4 0%, #d7efc6 100%);
+}
+
+.art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  pointer-events: none;
+  user-select: none;
 }
 
 .sparkle {
@@ -23,9 +34,14 @@
 }
 
 .silhouette {
-  background: #4b4560;
+  background: #cfc9e8;
   border-color: #332e44;
-  color: #cfc9e8;
+}
+
+.question {
+  position: relative;
+  color: #ffffff;
   font-weight: 800;
   font-size: 26px;
+  text-shadow: 0 2px 0 #332e44;
 }
