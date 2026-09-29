@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import type { GameSession } from '../bridge/gameSession';
 import { AnimalCard } from './AnimalCard';
+import { AwayCard } from './AwayCard';
 import { DecorateBar } from './DecorateBar';
 import { DexScreen } from './DexScreen';
 import styles from './App.module.css';
@@ -40,6 +41,7 @@ export function App({ session }: { session: GameSession }) {
         <PetWardrobe />
         <TutorialCoach />
         <Toasts />
+        <AwayCard />
         {DebugPanel && (
           <Suspense fallback={null}>
             <DebugPanel />

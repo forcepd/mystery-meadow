@@ -88,3 +88,35 @@ test.describe('sound (DESIGN 16.3)', () => {
       .toBeGreaterThan(3);
   });
 });
+
+test.describe('while you were away (DESIGN 14)', () => {
+  test('coming back after a while shows good news, then play', async ({ page }) => {
+    await seedSave(
+      page,
+      buildSave((s, now) => {
+        // Last played 2 hours ago; a visitor was due right after.
+        s.meta.lastSeenAt = now - 2 * 3_600_000;
+        s.world.nextVisitorAt = now - 2 * 3_600_000 + 60_000;
+      }),
+    );
+    await page.goto('./');
+    await canvasReady(page);
+    const card = page.getByRole('dialog', { name: /while you were away/i });
+    await expect(card).toBeVisible();
+    await expect(card).toContainText('You were gone 2 hours.');
+    await expect(card).toContainText('waiting at the gate');
+    await expect(card).toContainText('Nobody got hungry or sick');
+    await press(page, card.getByRole('button', { name: /let’s play/i }));
+    await expect(card).toBeHidden();
+  });
+
+  test('a quick reload shows no card', async ({ page }) => {
+    await seedSave(
+      page,
+      buildSave(() => {}),
+    );
+    await page.goto('./');
+    await canvasReady(page);
+    await expect(page.getByRole('dialog', { name: /while you were away/i })).toHaveCount(0);
+  });
+});

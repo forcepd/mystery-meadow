@@ -18,6 +18,7 @@ import { ScaledClock, systemClock, type Clock } from '../sim/clock';
 import { Emitter } from '../sim/emitter';
 import { GameSim } from '../sim/GameSim';
 import type { CommandResult } from '../sim/types';
+import { awayCard, type AwayCard } from './away';
 import { displayName } from './describe';
 
 /** Used by tests and old single-profile installs. */
@@ -31,6 +32,8 @@ export type SessionEvents = {
   saveFailed: { error: unknown };
   /** The profile changed (avatar, owned items, outfits, tutorial step). */
   profileChanged: { profile: Profile };
+  /** A "While you were away" card to show (or null once it's closed). */
+  awayChanged: { card: AwayCard | null };
 };
 
 export interface SessionOptions {
@@ -58,6 +61,7 @@ export class GameSession {
   private saving: Promise<void> = Promise.resolve();
   private stopped = false;
   private stateVersion = 0;
+  private awayNow: AwayCard | null = null;
 
   private constructor(
     readonly sim: GameSim,
@@ -137,7 +141,7 @@ export class GameSession {
       const clock = new ScaledClock(source, 1, Math.max(source.now(), file.meta.lastSeenAt));
       const sim = GameSim.fromState(toSimState(file), clock);
       const session = new GameSession(sim, clock, file.profile, file.activity, saves, false);
-      sim.catchUp();
+      session.catchUp();
       return session;
     }
 
@@ -167,7 +171,27 @@ export class GameSession {
 
   /** The page is visible again: the time away is offline time. */
   visible(): void {
-    if (!this.stopped) this.sim.catchUp();
+    if (!this.stopped) this.catchUp();
+  }
+
+  /** The "While you were away" card waiting to be seen, if any. */
+  get away(): AwayCard | null {
+    return this.awayNow;
+  }
+
+  dismissAway(): void {
+    this.awayNow = null;
+    this.events.emit('awayChanged', { card: null });
+  }
+
+  private catchUp(): void {
+    const summary = this.sim.catchUp();
+    // Never interrupt the first-time tutorial.
+    if (this.currentProfile.tutorial !== 'done') return;
+    const card = awayCard(summary, this.sim.state.world.settings.offlineProgress);
+    if (!card) return;
+    this.awayNow = card;
+    this.events.emit('awayChanged', { card });
   }
 
   autosave(): Promise<void> {

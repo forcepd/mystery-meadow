@@ -56,6 +56,8 @@ export const TOASTS: {
       ? { icon: '🐾', text: 'Your yard is crowded!' }
       : { icon: '🌼', text: 'There’s room again. Visitors are on their way!' },
   caughtUp: (s) => {
+    // Longer breaks get the "While you were away" card instead (bridge/away.ts).
+    if (s.awayMs >= BALANCE.offline.summaryMinMinutes * 60_000) return null;
     const parts: string[] = [];
     if (s.visitorsWaiting > 0) {
       parts.push(

@@ -68,6 +68,8 @@ describe('toasts (DESIGN 17.4)', () => {
     expect(TOASTS.caughtUp!({ ...base, visitorsWaiting: 2, babiesBorn: 1 })?.text).toBe(
       'Welcome back! 2 visitors are waiting and 1 baby was born.',
     );
+    // A longer break shows the "While you were away" card instead.
+    expect(TOASTS.caughtUp!({ ...base, awayMs: 3_600_000, visitorsWaiting: 2 })).toBeNull();
   });
 
   it('every toast has an icon and short text', () => {

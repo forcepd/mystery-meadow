@@ -121,7 +121,8 @@ export const BALANCE = deepFreeze({
   // bed's own bonus (items.ts).
   coziness: { max: 100, regenPerMinuteAtMax: 1.5 },
 
-  offline: { maxCatchUpHours: 8, maxGateQueue: 3 },
+  // [DEFAULT, Phase 10] The "While you were away" card shows after at least this long away.
+  offline: { maxCatchUpHours: 8, maxGateQueue: 3, summaryMinMinutes: 5 },
 
   // [DEFAULT, Phase 1] Fixed sim tick. A gap between updates longer than offlineGapSeconds is
   // treated as offline time (safety net in case the app misses a visibilitychange).
