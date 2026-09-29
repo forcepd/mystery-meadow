@@ -8,6 +8,8 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
+  // CI's runner defaults to 1 worker (about 35 minutes for the suite); 2 roughly halves it.
+  ...(process.env.CI ? { workers: 2 } : {}),
   reporter: process.env.CI ? 'github' : 'list',
   use: { baseURL: `http://localhost:${PORT}/` },
   // Smoke tests run against the production build, which is what ships.
@@ -20,6 +22,10 @@ export default defineConfig({
   projects: [
     { name: 'desktop-chromium', use: { ...devices['Desktop Chrome'] } },
     { name: 'ipad-webkit', use: { ...devices['iPad Mini landscape'] } },
-    { name: 'ipad-pro-webkit', use: { ...devices['iPad Pro 11 landscape'] } },
+    // Skipped on CI to keep it quick: it repeats WebKit at a larger size, and CI already covers
+    // WebKit at the smallest target (iPad mini). Runs locally.
+    ...(process.env.CI
+      ? []
+      : [{ name: 'ipad-pro-webkit', use: { ...devices['iPad Pro 11 landscape'] } }]),
   ],
 });

@@ -16,6 +16,8 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
+    # The e2e suite takes about 15 minutes here; stop a stuck run instead of hanging for hours.
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
