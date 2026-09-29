@@ -1232,3 +1232,19 @@ The start is much busier, as intended. But because the yard fills to capacity ab
   Hats, glasses, and the cape still use their anchors. Checked on 10 body shapes, plus close-ups. A unit test pins the layering.
 
 - **Poop could hide under the bottom menu.** The yard's usable area ran down to y = 730, but the HUD menu covers the world from about y = 698 on wide screens (measured: 1280×720 and 1920×1080 windows, and it's similar in iPad Safari with its toolbars). The yard now spans y = 430–665 (was 470–730). It uses the empty grass under the fence, so it's almost as tall as before. Saves are unaffected (positions are stored as 0–1). The house floor already stopped at 650. New e2e tests at 1280×720 tap poops in the bottom-left, middle, and bottom-right of both the yard and the house floor, and check that all 3 got cleaned. They failed before the fix: the House button caught the tap. Known: at that widest shape, the name labels under bottom-row animals can still tuck under the menu (the animals themselves stay tappable).
+
+---
+
+## Deployment (fixed 2026-09-29)
+
+- **Live at https://pforce.com/mystery-meadow/** (and https://forcepd.github.io/mystery-meadow/). Every green push to `main` deploys through GitHub Pages (`.github/workflows/ci.yml`).
+- **Why nothing had deployed:**
+  1. From Phase 7 on, `npm run format:check` failed on an unformatted `docs/PROGRESS.md`, which skipped every later step.
+  2. Behind that: one economy test ran past Vitest's 5 s limit on the slower runner (economy tests now get 30 s).
+  3. The e2e suite ran on 1 worker, at about 35 minutes.
+  4. Two e2e tests depended on page-load speed.
+  5. GitHub Pages was never turned on, and the repo was private.
+- **What changed:**
+  - **CI settings:** CI runs Playwright with 2 workers, 60 s tests, 10 s expects, and a 45-minute job limit. It skips the iPad Pro WebKit project; all 3 projects still run locally.
+  - **Repo:** made public (your choice), with Pages set to "GitHub Actions".
+  - **Result:** the first green run took about 16 minutes.
