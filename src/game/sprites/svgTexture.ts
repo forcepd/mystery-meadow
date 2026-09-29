@@ -12,7 +12,12 @@ export function texturePixels(size: { w: number; h: number }): { w: number; h: n
   return { w: Math.ceil(size.w * scale), h: Math.ceil(size.h * scale) };
 }
 
-const pending = new Map<string, ((key: string) => void)[]>();
+/**
+ * Pictures still being built, per game (per texture manager). A game that's thrown away and
+ * remade (React StrictMode in dev, switching players) must never wait on the old game's build:
+ * that texture would land in the old game, and the new one would show nothing.
+ */
+const pendingByGame = new WeakMap<object, Map<string, ((key: string) => void)[]>>();
 
 /**
  * Makes sure texture `key` exists, rasterizing `source` (an SVG data URI or an image URL from the
@@ -28,6 +33,8 @@ export function ensureTexture(
   ready: (key: string) => void,
 ): void {
   const textures = scene.textures;
+  const pending = pendingByGame.get(textures) ?? new Map<string, ((key: string) => void)[]>();
+  pendingByGame.set(textures, pending);
   if (textures.exists(key)) {
     ready(key);
     return;
