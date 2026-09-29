@@ -421,7 +421,7 @@ Everything short of that is verified locally: build, unit tests, and e2e on emul
 
 ### Defaults chosen (spec left open): please confirm or change
 
-1. **Free Clinic** covers the visit *and* treatments when coins < 30 (fee + one treatment), after a 3-min wait. On a paid visit, a treatment you can't afford is free. (Your answer.)
+1. **Free Clinic** covers the visit _and_ treatments when coins < 30 (fee + one treatment), after a 3-min wait. On a paid visit, a treatment you can't afford is free. (Your answer.)
 2. **Contagion gives the neighbor's illness** (your answer); the base-risk share gives a random one.
 3. **Specific symptom icons in the yard** (your answer). The card shows symptoms, not the illness name.
 4. **Exam is optional:** you can pick a treatment before using any tool.
@@ -507,7 +507,7 @@ All DESIGN 10.1 rules are unit tested, including the four named cases: keeping w
 ### Defaults chosen (spec left open): please confirm or change
 
 1. **Keeping is free and instant.** Any animal can be kept, including sick, pregnant, and babies.
-2. **Swapping works even when the house is full**, because the animal count doesn't change. Only taking a pet out into an *empty* slot needs free capacity.
+2. **Swapping works even when the house is full**, because the animal count doesn't change. Only taking a pet out into an _empty_ slot needs free capacity.
 3. **Pets come out of Storage into the yard by the house door.** Indoor placement arrives with the house in Phase 6.
 4. **A pregnant pet in Storage** stays pregnant, and the countdown resumes when it comes out.
 5. **The Dex hides names of undiscovered species**, showing a silhouette, "???", and rarity stars (your answer). Variant names show as tooltips only.
@@ -693,11 +693,11 @@ All DESIGN 10.1 rules are unit tested, including the four named cases: keeping w
 
 Averaged over 30 bots × 48 h with `--spend`:
 
-| Tier | Hours of play to move in |
-|---|---|
+| Tier           | Hours of play to move in               |
+| -------------- | -------------------------------------- |
 | Sunny Bungalow | **3.5 h** (DESIGN 15.1: "≈ 3–4 hours") |
-| Big Farmhouse | **8.7 h** |
-| Grand Manor | **21.4 h** |
+| Big Farmhouse  | **8.7 h**                              |
+| Grand Manor    | **21.4 h**                             |
 
 DESIGN 15.1 calls the Manor "a multi-week goal". The bot is perfect: it taps every visitor instantly and sells the moment it can. A kid will be much slower, but maybe not "weeks" slow. Each upgrade also speeds up earning (more room, faster visitors, rarer animals). **Designer call:** keep it, or raise the Farmhouse and Manor prices in `balance.ts` (e.g. 8,000 and 30,000).
 
@@ -756,6 +756,7 @@ DESIGN 15.1 calls the Manor "a multi-week goal". The bot is perfect: it taps eve
   5. "Great job!"
 
   Skippable (your choice), and the step is saved so a reload resumes.
+
 - **HUD:** the avatar's face (top-left) opens **My Style**; ⚙️ (bottom-right) opens **Settings**.
 - **My Style:**
   - **Wardrobe:** owned items only, free changes, 3 favorite outfits.
@@ -793,7 +794,7 @@ DESIGN 15.1 calls the Manor "a multi-week goal". The bot is perfect: it taps eve
 
 ### Bugs found and fixed (after Phase 8)
 
-- **The menu buttons covered the Vet Clinic's exam tools.** The HUD menu (and ⚙️) stayed up in the clinic, over the bottom half of the stethoscope, thermometer, and magnifying glass. They now step aside in the clinic, as they already did in Decorate mode. The old vet tests only tapped the *centers* of the tools, which sit just above the menu, so they missed it. A new e2e test checks every corner of every tool is the game canvas, and that the menu comes back in the yard.
+- **The menu buttons covered the Vet Clinic's exam tools.** The HUD menu (and ⚙️) stayed up in the clinic, over the bottom half of the stethoscope, thermometer, and magnifying glass. They now step aside in the clinic, as they already did in Decorate mode. The old vet tests only tapped the _centers_ of the tools, which sit just above the menu, so they missed it. A new e2e test checks every corner of every tool is the game canvas, and that the menu comes back in the yard.
 
 ### Phase 8 "Done when"
 
@@ -804,7 +805,7 @@ A brand-new player goes from first launch to their first sale entirely through t
 1. **Forgot PIN:** a grown-up check (your answer). Type a number written in words, then set a new PIN; saves are kept.
 2. **The tutorial can be skipped** (your answer).
 3. **Gem packs:** 10 / 50 / 100 + custom 1–500 (your answer).
-4. **Tutorial "feed it":** the first visitor arrives a bit hungry next to an *empty* bowl, so the kid fills it. The spec just says "feeds it"; a treat would have been refused because a new animal is full.
+4. **Tutorial "feed it":** the first visitor arrives a bit hungry next to an _empty_ bowl, so the kid fills it. The spec just says "feeds it"; a treat would have been refused because a new animal is full.
 5. **Body shape and skin tone are never sold.**
 6. **Usernames are unique per device**, ignoring case, so the picker never shows two the same.
 7. **Resetting a player** keeps their name, avatar, and Boutique items, and starts a fresh meadow without the tutorial.
@@ -835,7 +836,7 @@ A brand-new player goes from first launch to their first sale entirely through t
 
 - **`trainSession(animalId, trickId, success)`:**
   - The sim decides every rule; the UI only reports whether the round was won.
-  - Blocked when: sick, resting (5 minutes after a *successful* session), the trick is already known, or the rarity cap is reached (2/3/4/5/6).
+  - Blocked when: sick, resting (5 minutes after a _successful_ session), the trick is already known, or the rarity cap is reached (2/3/4/5/6).
   - A mistake changes nothing, so the kid can try again right away (your choice).
   - 3 successes learn the trick. Learning pays **5 gems, once per animal and trick**, up to what's left of today's cap.
   - **The daily cap** (`settings.dailyTrickGemCap`, default 40, adjustable in Parent Mode) counts every animal together. It resets at the player's local midnight (`dayKey`). A capped trick is still learned, just without gems.
@@ -915,6 +916,7 @@ A brand-new player goes from first launch to their first sale entirely through t
 ## Phase 10: Art, Audio, and Polish (built 2026-09-28)
 
 Your choices before starting:
+
 - **Audio:** made in code with Web Audio. It's original, needs no files or licenses, and makes no network calls.
 - **Tricky vet cases:** from the Farmhouse tier on, 20% of new sicknesses (tunable) come with two illnesses. Each needs its own right treatment, and there's only one visit fee.
 - **Pacing:** stop after the art (step A) for a review, then build the rest (B–F).
@@ -1046,7 +1048,7 @@ Your choices before starting:
 
 - **Measured** with `npm run perf`: a busy yard (24 animals, some in outfits or Sparkle, 3 visitors, and 6 poops).
   - 60 fps in iPad mini and iPad Pro WebKit, and 59 in Chromium, on this Mac.
-  - With Chromium's CPU slowed 4x: 42 fps. Profiling that shows about 70% of the time is the headless browser's *software* GPU drawing. The game's own code is under 2% of a frame.
+  - With Chromium's CPU slowed 4x: 42 fps. Profiling that shows about 70% of the time is the headless browser's _software_ GPU drawing. The game's own code is under 2% of a frame.
   - A real iPad draws on its GPU, so this should be fine, **but it has to be checked on the device** (checklist below).
 - **Changes:**
   - Sprites skip rebuilding their art key unless the look changed.
@@ -1102,10 +1104,9 @@ The spec's "runs at 60 fps on the target iPad and passes the manual checklist in
 ### Known issues (steps B–F)
 
 - The frame rate on a real iPad is still unchecked (see above).
-- I can't listen to the audio from here. The tests check that it plays, stays in range, and never gets too loud, but not how it *sounds*. Please listen and tell me what to change.
+- I can't listen to the audio from here. The tests check that it plays, stays in range, and never gets too loud, but not how it _sounds_. Please listen and tell me what to change.
 - The onboarding e2e test (Phase 8) failed once while the whole suite ran at full speed, then passed 3 times in a row on its own and in the next full run. It's probably timing under load; I'll keep an eye on it.
 - The game world itself (the Phaser canvas) can't be read by a screen reader. Everything important also shows in the HTML screens (card, toasts, HUD).
-
 
 ### Bugs found and fixed (after Phase 10)
 
@@ -1138,18 +1139,19 @@ The start felt slow: after the tutorial the next visitor took 10 minutes, nothin
 
 - **The 8 goals:**
 
-  | Goal | Reward |
-  |---|---|
+  | Goal                    | Reward |
+  | ----------------------- | ------ |
   | Meet 3 mystery visitors | +20 🪙 |
-  | Fill a food bowl | +10 🪙 |
-  | Pet animals 5 times | +15 🪙 |
-  | Clean up 3 poops | +15 🪙 |
-  | Give an animal a name | +5 💎 |
-  | Make your first sale | +10 💎 |
-  | Put a lure in the yard | +20 🪙 |
-  | Teach a trick | +10 💎 |
+  | Fill a food bowl        | +10 🪙 |
+  | Pet animals 5 times     | +15 🪙 |
+  | Clean up 3 poops        | +15 🪙 |
+  | Give an animal a name   | +5 💎  |
+  | Make your first sale    | +10 💎 |
+  | Put a lure in the yard  | +20 🪙 |
+  | Teach a trick           | +10 💎 |
 
   Finishing all of them gives a **free Flower Garden and +50 🪙**.
+
 - **Counting:** the sim counts the player's own actions (not Scoop Bot's or the Auto-Feeder's). A lure only counts when placed in the yard.
 - **HUD:** a 🎯 Goals button appears after the tutorial. It turns yellow with a pulsing count when something is ready, and disappears once every goal is collected. There's a "Goal done!" toast and sound.
 - **Data-driven:** a new goal is a data entry that uses one of the 8 things the sim counts.
@@ -1181,10 +1183,10 @@ The start felt slow: after the tutorial the next visitor took 10 minutes, nothin
 
 Economy harness, perfect bot, 40 seeds:
 
-| | Without quick start | With quick start |
-|---|---|---|
-| Coins earned in the first 30 min | 55 | **473** |
-| Hours to afford the Sunny Bungalow | 3.4 | **2.35** |
+|                                    | Without quick start | With quick start |
+| ---------------------------------- | ------------------- | ---------------- |
+| Coins earned in the first 30 min   | 55                  | **473**          |
+| Hours to afford the Sunny Bungalow | 3.4                 | **2.35**         |
 
 The start is much busier, as intended. But because the yard fills to capacity about 40 minutes sooner, the Bungalow also comes about an hour sooner, which is below DESIGN 15.1's "≈ 3–4 hours". A real kid is slower than the bot. If it feels too fast, a Bungalow price of about 2,000 (from 1,500) would bring it back. I haven't changed any prices.
 
@@ -1220,7 +1222,7 @@ The start is much busier, as intended. But because the yard fills to capacity ab
 - On this Mac's WebKit, the 🪙 emoji draws as a grey coin. That comes from the device's emoji font (it was already like this in toasts); iPads show a gold coin.
 - A find can land on top of an animal. The first tap then collects the find, and the second tap reaches the animal.
 - **The tutorial still said "In 20 minutes it's ready for a new home"** after the early-game pass made a new player's first animals ready in 5. The text was hardcoded. It now shows the animal's real wait ("In 5 minutes…", counting down), using `inMinutes()` in `bridge/describe.ts` (unit-tested). The onboarding e2e test checks it.
-- **Animals invisible after reloading a save (dev server).** The texture helper kept one shared list of pictures being built for *every* Phaser game. React StrictMode in dev creates a game, destroys it, and creates another, so the second game waited on the first game's build. The picture then went into the destroyed game's texture store, and the second game was told to use a texture it never got. Animals showed only their names and shadows. It could also happen in a real build if the game is recreated mid-load (e.g. Switch player right after loading). In-progress builds are now kept per game (`svgTexture.ts`). A unit test reproduces it with two fake games, and dev-server screenshots confirm the fix.
+- **Animals invisible after reloading a save (dev server).** The texture helper kept one shared list of pictures being built for _every_ Phaser game. React StrictMode in dev creates a game, destroys it, and creates another, so the second game waited on the first game's build. The picture then went into the destroyed game's texture store, and the second game was told to use a texture it never got. Animals showed only their names and shadows. It could also happen in a real build if the game is recreated mid-load (e.g. Switch player right after loading). In-progress builds are now kept per game (`svgTexture.ts`). A unit test reproduces it with two fake games, and dev-server screenshots confirm the fix.
 - **Pet clothes looked bad (sweater, scarf, tutu, bandana).** They were drawn at one fixed spot and size for every animal: the sweater was a striped oval floating over the body, the tutu a flat disc at the feet, and the scarf and bandana covered the mouth. These four are now drawn to each animal's own shape (`fittedOutfit` in `art/outfitSvg.ts`):
   - **Sweater:** knitted onto the body itself (clipped to its outline), with stripes, a ribbed hem, and a ribbed collar under the chin. The belly and feet show below it.
   - **Tutu:** a two-layer ruffled skirt that flares from the animal's real waist width.
@@ -1228,4 +1230,5 @@ The start is much busier, as intended. But because the yard fills to capacity ab
   - **Bandana:** a polka-dot neckerchief under the chin, with a little knot.
 
   Hats, glasses, and the cape still use their anchors. Checked on 10 body shapes, plus close-ups. A unit test pins the layering.
+
 - **Poop could hide under the bottom menu.** The yard's usable area ran down to y = 730, but the HUD menu covers the world from about y = 698 on wide screens (measured: 1280×720 and 1920×1080 windows, and it's similar in iPad Safari with its toolbars). The yard now spans y = 430–665 (was 470–730). It uses the empty grass under the fence, so it's almost as tall as before. Saves are unaffected (positions are stored as 0–1). The house floor already stopped at 650. New e2e tests at 1280×720 tap poops in the bottom-left, middle, and bottom-right of both the yard and the house floor, and check that all 3 got cleaned. They failed before the fix: the House button caught the tap. Known: at that widest shape, the name labels under bottom-row animals can still tuck under the menu (the animals themselves stay tappable).
