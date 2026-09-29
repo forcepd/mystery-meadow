@@ -8,6 +8,9 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
+  // CI's runners draw without a GPU and are several times slower than a dev machine.
+  timeout: process.env.CI ? 60_000 : 30_000,
+  expect: { timeout: process.env.CI ? 10_000 : 5_000 },
   // CI's runner defaults to 1 worker (about 35 minutes for the suite); 2 roughly halves it.
   ...(process.env.CI ? { workers: 2 } : {}),
   reporter: process.env.CI ? 'github' : 'list',

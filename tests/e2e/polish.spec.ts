@@ -163,6 +163,7 @@ async function audit(page: Page, where: string) {
 
 test.describe('accessibility pass (DESIGN 17.5)', () => {
   test('main screens: big enough targets, every control named', async ({ page }) => {
+    test.setTimeout(90_000); // It visits 9 screens.
     await seedSave(
       page,
       buildSave((s, now) => {

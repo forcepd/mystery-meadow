@@ -111,16 +111,20 @@ test.describe('first playable yard', () => {
   });
 
   test('a pregnant visitor that comes in has babies (toast)', async ({ page }) => {
+    // The birth is a minute away and the test skips ahead to it once the game is running, so it
+    // never happens during a slow page load (where it would be caught up quietly, no toast).
+    await page.clock.install();
     await seedSave(
       page,
       buildSave((s, now) =>
         s.world.animals.push(
-          testAnimal(now, { name: 'Biscuit', pregnancy: { birthAt: now + 2000, litterSize: 3 } }),
+          testAnimal(now, { name: 'Biscuit', pregnancy: { birthAt: now + 60_000, litterSize: 3 } }),
         ),
       ),
     );
     await page.goto('./');
     await canvasReady(page);
+    await page.clock.fastForward('01:05');
     await expect(page.getByText('Biscuit had 3 babies!')).toBeVisible({ timeout: 10_000 });
     await expect(page.getByTestId('capacity')).toHaveText('🐾4/6');
   });
